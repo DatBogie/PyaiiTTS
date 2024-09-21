@@ -33,7 +33,7 @@ class MainWindow(QWidget):
                 raise Exception("Please paste your elevenlabs.io key into key.txt")
             if not os.path.exists("conf.json"):
                 with open(r"conf.json","w") as f:
-                    f.write('{\n\t"output_path": '+root+',\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
+                    f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
                 
             with open(r"conf.json","r") as f:
                 data = json.load(f)
@@ -55,9 +55,11 @@ class MainWindow(QWidget):
 
         self.voice = QComboBox()
         self.voice.addItems(VOICES.keys())
-        self.voice.setCurrentIndex(
-            list(VOICES.values()).index(self.data["voice_id"])
-        )
+        try:
+            self.voice.setCurrentIndex(
+                list(VOICES.values()).index(self.data["voice_id"])
+            )
+        except:pass
 
         self.voice.activated.connect(self.change_voice)
 
