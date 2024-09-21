@@ -23,7 +23,7 @@ class MainWindow(QWidget):
     def __init__(self):
         global __start__
         super().__init__()
-        
+
         if __start__ == False:
             __start__ = True
             if os.path.exists("key.txt"):
@@ -34,11 +34,11 @@ class MainWindow(QWidget):
             if not os.path.exists("conf.json"):
                 with open(r"conf.json","w") as f:
                     f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
-                
+
             with open(r"conf.json","r") as f:
                 data = json.load(f)
             self.data = data
-            
+
             self.client = ElevenLabs(
                 api_key=self.key
             )
@@ -98,30 +98,30 @@ class MainWindow(QWidget):
         layout.addLayout(btns_layout)
         self.setLayout(layout)
 
-    
+
     def change_voice(self):
         self.data["voice_id"] = VOICES[self.voice.currentText()]
-    
+
     def upd_file(self):
         self.data["output_name"] = self.output_input.text()
-    
+
     def upd_text(self):
         escapes = ''.join([chr(char) for char in range(1, 32)])
         self.data["text"] = self.text_input.toPlainText().strip().translate(str.maketrans('','',escapes))
         self.text_input.setPlainText(self.data["text"])
-    
+
     def choose_dir(self):
         dia = QFileDialog.getExistingDirectory(self,"Choose output directory...",self.data["output_path"])
         if dia:
             self.data["output_path"] = dia
             self.output.setText(f'Choose Output Location ({self.data["output_path"]})')
-    
+
     def generate(self):
         x=self.client.generate(text=self.data["text"],voice=self.data["voice_id"])
         with open(f"{self.data['output_path']}{s}{self.data['output_name']}.mp3","wb") as f:
             f.write(b''.join(x))
             QMessageBox.information(self,"TF2 AI TTS","TTS Success!")
-    
+
     def save(self):
         self.upd_text()
         self.upd_file()
