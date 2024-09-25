@@ -1,9 +1,11 @@
 import sys, json, os
 from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog
 from PyQt6.QtCore import Qt
 from functools import partial
 from elevenlabs.client import ElevenLabs
+from random import randrange
+import requests
 
 __start__ = False
 
@@ -13,35 +15,12 @@ if sys.platform == "win32":
     s = "\\"
     root = "C:\\"
 
-THEME_CHANGED = False
-
-VOICES = {}
-
-if not os.path.exists("voices.json"):
-    with open("voices.json","w") as f:
-        json.dump({
-            "John": "fTt87DbpNDYfGLhYRaCj",
-            "Adam": "pNInz6obpgDQGcFmaJgB",
-            "Wheatly": "wbkTEiY2duHYPGxRIrMb",
-            "Heavy": "NXdARWuv0JFJUqSTb4RI"
-        },f)
-        # f.write('{"John": "fTt87DbpNDYfGLhYRaCj", "Adam": "pNInz6obpgDQGcFmaJgB", "Wheatly": "wbkTEiY2duHYPGxRIrMb", "Heavy": "NXdARWuv0JFJUqSTb4RI"}')
-with open("voices.json","r") as f:
-    VOICES = json.load(f)
-
-# VOICES = {
-#     "John": "fTt87DbpNDYfGLhYRaCj",
-#     "Adam": "pNInz6obpgDQGcFmaJgB",
-#     "Wheatly": "wbkTEiY2duHYPGxRIrMb",
-#     "Heavy": "NXdARWuv0JFJUqSTb4RI"
-# }
-
 class RGB():
     def __init__(self,r:int|QColor|list[int,int,int]|tuple[int,int,int]=-1,g:int=0,b:int=0):
         if type(r) == int:
-            self.r = (r+255)%255
-            self.g = (g+255)%255
-            self.b = (b+255)%255
+            self.r = self.clamp_num(r,0,255)
+            self.g = self.clamp_num(g,0,255)
+            self.b = self.clamp_num(b,0,255)
         elif type(r) == QColor:
             self.r = r.red()
             self.g = r.green()
@@ -50,72 +29,152 @@ class RGB():
             self.r = r[0]
             self.g = r[1]
             self.b = r[2]
+    def clamp_num(self,x:int,min:int,max:int):
+        return x if (x >= min and x <= max) else (min if x < min else max)
+    def clampTo(self,x):
+        return RGB(self.clamp_num(self.r,0,x.r),self.clamp_num(self.g,0,x.g),self.clamp_num(self.b,0,x.b))
+
     def invert(self):
         return RGB(255-self.r,255-self.g,255-self.b)
     def add(self,x:int):
-        return RGB(((self.r+x)+255)%255,((self.g+x)+255)%255,((self.b+x)+255)%255)
+        return RGB((self.r+x),(self.g+x),((self.b+x)))
     def get(self):
         return [self.r,self.g,self.b]
+    def set(self,x):
+        self.r = x.r,
+        self.g = x.g,
+        self.b = x.b
     def lightness(self):
         return self.QColor().toHsl().lightness()
     def QColor(self):
         return QColor.fromRgb(self.r,self.g,self.b)
 
+
+THEME_CHANGED = False
+
+VOICES = {}
+
+SYSTEM_THEME = "System (Requires Restart)"
+PROTECTED_THEMES = ["Dark","Light",SYSTEM_THEME]
+
+DEFAULT_VOICES = {
+    "John": "fTt87DbpNDYfGLhYRaCj",
+    "Adam": "pNInz6obpgDQGcFmaJgB",
+    "Wheatly": "wbkTEiY2duHYPGxRIrMb",
+    "Heavy": "NXdARWuv0JFJUqSTb4RI"
+}
+
+DEFAULT_THEMES = {
+    "Dark": {
+        "Button": RGB(45,45,45).get(),
+        "Text Input": RGB(35,35,35).get(),
+        "Background": RGB(25,25,25).get(),
+        "Accent": RGB(21,106,175).get()
+    },
+
+    "Light": {
+        "Button": RGB(210,210,210).get(),
+        "Text Input": RGB(220,220,220).get(),
+        "Background": RGB(230,230,230).get(),
+        "Accent": RGB(155,205,255).get()
+    },
+
+    SYSTEM_THEME: {
+        "Button": RGB(0,0,0).get(),
+        "Text Input": RGB(0,0,0).get(),
+        "Background": RGB(0,0,0).get(),
+        "Accent": RGB(0,0,0).get()
+    }
+}
+
+DEFAULT_CONF = {
+    "output_path": root + ("\\" if sys.platform == "win32" else ""),
+    "voice_id": "",
+    "text": "",
+    "output_name": ""
+}
+
+DEFAULT_PREF = {
+    "Theme": "Dark"
+}
+
+
+if not os.path.exists("voices.json"):
+    with open("voices.json","w") as f:
+        json.dump(DEFAULT_VOICES,f)
+        # f.write('{"John": "fTt87DbpNDYfGLhYRaCj", "Adam": "pNInz6obpgDQGcFmaJgB", "Wheatly": "wbkTEiY2duHYPGxRIrMb", "Heavy": "NXdARWuv0JFJUqSTb4RI"}')
+with open("voices.json","r") as f:
+    try:
+        VOICES = json.load(f)
+    except:
+        VOICES = DEFAULT_VOICES
+        try:
+            os.rename("voices.json","voices (backup).json")
+        except:pass
+        with open("voices.json","w") as f:
+            json.dump(DEFAULT_VOICES,f)
+
+
+# VOICES = {
+#     "John": "fTt87DbpNDYfGLhYRaCj",
+#     "Adam": "pNInz6obpgDQGcFmaJgB",
+#     "Wheatly": "wbkTEiY2duHYPGxRIrMb",
+#     "Heavy": "NXdARWuv0JFJUqSTb4RI"
+# }
+
+# print(RGB(255,0,0))
+
 COLORS = {
     "Button": RGB(45,45,45), # buttons, etc
     "Text Input": RGB(35,35,35), # text inputs, etc
-    "Background": RGB(25,25,25) # backgrounds/misc
+    "Background": RGB(25,25,25), # backgrounds/misc
+    "Accent": RGB(255,255,255)
 }
+
 
 if not os.path.exists("themes.json"):
     with open("themes.json","w") as f:
-        json.dump({
-            "Dark": {
-                "Button": RGB(45,45,45).get(),
-                "Text Input": RGB(35,35,35).get(),
-                "Background": RGB(25,25,25).get()
-            },
-
-            "Light": {
-                "Button": RGB(210,210,210).get(),
-                "Text Input": RGB(220,220,220).get(),
-                "Background": RGB(230,230,230).get()
-            },
-
-            "System (Requires Restart)": {
-                "Button": RGB(0,0,0).get(),
-                "Text Input": RGB(0,0,0).get(),
-                "Background": RGB(0,0,0).get()
-            }
-        },f)
+        json.dump(DEFAULT_THEMES,f)
 
 with open("themes.json","r") as f:
-    THEMES:dict = json.load(f)
+    try:
+        _themes = json.load(f)
+        for k, v in DEFAULT_THEMES.items():
+            _themes[k] = v
+    except:
+        _themes = DEFAULT_THEMES
+    THEMES:dict = _themes
 for n,t in THEMES.items():
     for nc,c in t.items():
         THEMES[n][nc] = RGB(c)
 
 
-def s0(c:str):
-    z="white"
-    if COLORS[c].lightness() >= 128:
-        z="black"
-    return "QPushButton, QComboBox { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
-def s1(c:str):
-    z="white"
-    if COLORS[c].lightness() >= 128:
-        z="black"
-    return "QLineEdit, QTextEdit { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
-def s2(c:str):
+def s0(c:str): # Background
     z="white"
     if COLORS[c].lightness() >= 128:
         z="black"
     return "QWidget { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+def s1(c:str):
+    z="white"
+    if COLORS[c].lightness() >= 128:
+        z="black"
+    return "QPushButton, QComboBox { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+def s2(c:str):
+    z="white"
+    if COLORS[c].lightness() >= 128:
+        z="black"
+    return "QLineEdit, QTextEdit { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+def s3(c:str):
+    # z="white"
+    # if COLORS[c].lightness() >= 128:
+    #     z="black"
+    return "QWidget { "+f'selection-background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b});'+" }"
 
 COLOR_FUNCTIONS = {
-    "Button": s0,
-    "Text Input": s1,
-    "Background": s2 
+    "Background": s0,
+    "Button": s1,
+    "Text Input": s2,
+    "Accent": s3
 }
 
 class MainWindow(QWidget):
@@ -127,30 +186,47 @@ class MainWindow(QWidget):
             __start__ = True
             if os.path.exists("key.txt"):
                 with open("key.txt","r") as f:
-                    self.key = f.read()
+                    key = f.read()
+                req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
+                if req.status_code == 200:
+                    self.key = key
+                else:
+                    x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key found in key.txt.\nPlease enter a valid key into key.txt and relaunch.",QMessageBox.StandardButton.Ok)
+                    self.close()
+                    sys.exit()
             else:
-                raise Exception("Please paste your elevenlabs.io key into key.txt")
+                key, s = QInputDialog.getText(self,"PyaiiTTS | Get API Key","Please enter your elevenlabs.io API key.")
+                if not s:
+                    raise Exception("Please paste your elevenlabs.io key into key.txt")
+                req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
+                if req.status_code == 200:
+                    self.key = key
+                    with open("key.txt","w") as f:
+                        f.write(key)
+                else:
+                    x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key.\nPlease relaunch and try again.",QMessageBox.StandardButton.Ok)
+                    self.close()
+                    sys.exit()
             if not os.path.exists("conf.json"):
                 with open("conf.json","w") as f:
-                    json.dump({
-                        "output_path": root + ("\\" if sys.platform == "win32" else ""),
-                        "voice_id": "",
-                        "text": "",
-                        "output_name": ""
-                    },f)
+                    json.dump(DEFAULT_CONF,f)
                     # f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
 
             with open("conf.json","r") as f:
-                data = json.load(f)
+                try:
+                    data = json.load(f)
+                except:
+                    data = DEFAULT_CONF
             self.data = data
 
             if not os.path.exists("pref.json"):
                 with open("pref.json","w") as f:
-                    json.dump({
-                        "Theme": "Dark"
-                    },f)
+                    json.dump(DEFAULT_PREF,f)
             with open("pref.json","r") as f:
-                prefer = json.load(f)
+                try:
+                    prefer = json.load(f)
+                except:
+                    prefer = DEFAULT_PREF
             self.prefer = prefer
 
             self.client = ElevenLabs(
@@ -208,11 +284,11 @@ class MainWindow(QWidget):
         self.save_p_btn = QPushButton("Save Preferences")
         self.save_p_btn.clicked.connect(self.save_p)
         self.save_p_btn.setToolTip("Save all preferences to pref.json.")
-        
+
         self.pref_btn = QPushButton("⚙")
         self.pref_btn.setMaximumWidth(25)
         self.pref_btn.setToolTip("Edit preferences.")
-        
+
         self.pref = QFrame(self)
         self.pref.setWindowTitle("PyaiiTTS | Preferences")
         self.pref.setWindowFlag(Qt.WindowType.Popup, True)
@@ -233,15 +309,34 @@ class MainWindow(QWidget):
 
         self.pref_t.activated.connect(partial(self.apply_current_theme,self.pref_t))
 
+        self.pref_cl = QLabel("Colors:")
+        self.pref_cl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
         self.pref_c = {}
+
+        pref_layout = QVBoxLayout()
+        pref_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
         self.pref_layout = QVBoxLayout()
         self.pref_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
 
-        self.addWidgets(self.pref_layout,[pref_l,self.pref_tl,self.pref_t])
+        self.addWidgets(pref_layout,[pref_l,self.pref_tl,self.pref_t,self.pref_cl])
 
-        self.pref.setLayout(self.pref_layout)
-        
+        pref_layout.addLayout(self.pref_layout)
+
+        self.pref_t_save = QPushButton("Save theme as...")
+        self.pref_t_save.clicked.connect(self.save_theme)
+
+        self.pref_t_remove = QPushButton("Remove Theme...")
+        self.pref_t_remove.clicked.connect(self.remove_theme)
+
+        self.pref_reset = QPushButton("⚠️ Reset Everything ⚠️")
+        self.pref_reset.clicked.connect(self.reset)
+
+        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_reset])
+
+        self.pref.setLayout(pref_layout)
+
         self.pref_btn.clicked.connect(self.show_pref)
 
         btns_layout = QHBoxLayout()
@@ -271,7 +366,11 @@ class MainWindow(QWidget):
 
         self.pref_t.addItems(THEMES.keys())
 
-        self.apply_theme(self.prefer["Theme"])
+        try:
+            self.apply_theme(self.prefer["Theme"])
+        except:
+            self.prefer["Theme"] = list(THEMES.keys())[0]
+            self.apply_theme(self.prefer["Theme"])
         self.set_style()
         # self.setStyleSheet(self.get_style())
 
@@ -281,14 +380,86 @@ class MainWindow(QWidget):
             )
         except:pass
 
+    def reset(self):
+        x = QMessageBox.warning(self,"PyaiiTTS | Reset All","Are you sure you want to reset EVEYRTHING?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+        if x != QMessageBox.StandardButton.Yes: return
+        code = int(f"{randrange(0,10)}{randrange(0,10)}{randrange(0,10)}")
+        y, s = QInputDialog.getInt(self,"PyaiiTTS | Reset All",f"Enter {code} to confirm.")
+        if not s or y != code: return
+        to_remove = [
+            "conf.json",
+            "pref.json",
+            "themes.json",
+            "voices.json"
+        ]
+        for v in to_remove:
+            if os.path.exists(v):
+                os.remove(v)
+        z = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+        if z != QMessageBox.StandardButton.Yes: return
+        self.close()
+        sys.exit()
+
+    def dump_THEMES(self):
+        _themes = THEMES.copy()
+        for k,v in _themes.items():
+            for y, x in v.items():
+                _themes[k][y] = x.get()
+        try:
+            # print(_themes)
+            with open("themes.json","w") as f:
+                json.dump(_themes,f)
+        except Exception as e:
+            return e
+        for k,v in _themes.items():
+            for y, x in v.items():
+                _themes[k][y] = RGB(x)
+
+    def remove_theme(self):
+        name, s = QInputDialog.getText(self,"PyaiiTTS | Remove Theme","Remove theme of name:")
+        if not s or name in PROTECTED_THEMES: return
+        if name in list(THEMES.keys()):
+            x = QMessageBox.warning(self,"PyaiiTTS | Remove Theme",f"Remove theme '{name}'?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+            if x != QMessageBox.StandardButton.Yes: return
+            ind = list(THEMES.keys()).index(name)
+            del THEMES[name]
+            e = self.dump_THEMES()
+            if e: QMessageBox.critical(self,"PyaiiTTS | Remove Theme",str(e)); return
+            if self.prefer["Theme"] == name:
+                print()
+                self.apply_theme(list(THEMES.keys())[(ind-1 if list(THEMES.keys())[ind-1] != SYSTEM_THEME else 0) if ind > 0 else 0])
+                self.pref_t.setCurrentIndex(
+                    list(THEMES.keys()).index(self.prefer["Theme"])
+                )
+            self.pref_t.removeItem(ind)
+            QMessageBox.information(self,"PyaiiTTS | Remove Theme",f"Theme '{name}' removed successfully!")
+        else:
+            QMessageBox.critical(self,"PyaiiTTS | Remove Theme",f"Invalid theme '{name}'!")
+
+    def save_theme(self):
+        name, s = QInputDialog.getText(self,"PyaiiTTS | Save Theme","Save Theme as:")
+        if not s or name in PROTECTED_THEMES: return
+        if name in list(THEMES.keys()):
+            x = QMessageBox.warning(self,"PyaiiTTS | Save Theme",f"Overwrite existing theme '{name}'?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+            if x != QMessageBox.StandardButton.Yes: return
+        THEMES[name] = COLORS
+        self.apply_theme(name)
+        e = self.dump_THEMES()
+        if e: QMessageBox.critical(self,"PyaiiTTS | Save Theme",str(e)); return
+        self.pref_t.addItem(name)
+        self.pref_t.setCurrentIndex(
+            list(THEMES.keys()).index(self.prefer["Theme"])
+        )
+        QMessageBox.information(self,"PyaiiTTS | Save Theme",f"Theme '{name}' saved and applied successfully!")
+
     def apply_current_theme(self,x:QComboBox):
         self.apply_theme(x.currentText())
-    
+
     def apply_theme(self,t:str):
         global COLORS, THEME_CHANGED
         last_theme = self.prefer["Theme"]
         self.prefer["Theme"] = t
-        if t == "System (Requires Restart)" and THEME_CHANGED:
+        if t == SYSTEM_THEME and THEME_CHANGED:
             x = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?\nYour configurations and preferences will be saved.",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
             if x == QMessageBox.StandardButton.Yes:
                 self.save()
@@ -306,7 +477,7 @@ class MainWindow(QWidget):
             COLORS = THEMES[t].copy()
             self.set_style()
         THEME_CHANGED = True
-    
+
     def addWidgets(self,x:QHBoxLayout|QVBoxLayout,y:list[QWidget]):
         for v in y:
             x.addWidget(v)
@@ -315,7 +486,7 @@ class MainWindow(QWidget):
         self.pref.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),(self.y()+int((self.height()-(self.height()/1.1))/2)),0,0)
         self.pref.setFixedSize(int(self.width()/1.1),int(self.height()/1.1))
         self.toggle_el(self.pref)
-    
+
     def get_style(self):
         x=""
         for n,v in COLOR_FUNCTIONS.items():
@@ -324,7 +495,7 @@ class MainWindow(QWidget):
         return COLOR_FUNCTIONS["Background"]("Background")+x
 
     def set_style(self):
-        if self.prefer["Theme"] != "System (Requires Restart)":
+        if self.prefer["Theme"] != SYSTEM_THEME:
             self.setStyleSheet(self.get_style())
             for c,v in self.pref_c.items():
                 z="white"
@@ -345,7 +516,7 @@ class MainWindow(QWidget):
             cd = QColorDialog(COLORS[c].QColor(),self)
             cd.show()
             cd.colorSelected.connect(x)
-    
+
     def toggle_el(self,el):
         el.setVisible(not el.isVisible())
 
@@ -382,7 +553,7 @@ class MainWindow(QWidget):
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Preferences",QMessageBox.StandardButton.Ok)
         except Exception as e:
             QMessageBox.critical(self,str(e),QMessageBox.StandardButton.Close)
-    
+
     def save(self):
         try:
             self.upd_text()
