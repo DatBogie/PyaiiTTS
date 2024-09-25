@@ -1,0 +1,19 @@
+{
+  "Light Purple": {"Button": [210, 210, 210],
+    "Text Input": [220, 220, 220],
+    "Background": [230, 230, 230],
+    "Accent": [210, 155, 255]
+  },
+  "Dark Purple": {
+    "Button": [45, 45, 45],
+    "Text Input": [35, 35, 35],
+    "Background": [25, 25, 25],
+    "Accent": [144, 106, 175]
+  },
+  "Blood Red": {
+    "Button": [45, 0, 1],
+    "Text Input": [35, 0, 1],
+    "Background": [25, 0, 0],
+    "Accent": [175, 0, 3]
+  }
+}
