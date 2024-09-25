@@ -186,7 +186,7 @@ class MainWindow(QWidget):
             __start__ = True
             if os.path.exists("key.txt"):
                 with open("key.txt","r") as f:
-                    key = f.read()
+                    key = f.read().strip()
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
                     self.key = key
