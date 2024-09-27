@@ -1,11 +1,12 @@
 import sys, json, os
 from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider
+from PyQt6.QtCore import Qt, pyqtSignal
 from functools import partial
 from elevenlabs.client import ElevenLabs
 from random import randrange
 import requests
+from elevenlabs import VoiceSettings
 
 __start__ = False
 
@@ -91,7 +92,10 @@ DEFAULT_CONF = {
     "output_path": root + ("\\" if sys.platform == "win32" else ""),
     "voice_id": "",
     "text": "",
-    "output_name": ""
+    "output_name": "",
+    "voice_stability": 0.75,
+    "voice_similarity": 0.75,
+    "voice_model": ["eleven_monolingual_v1", "Eleven English v1"]
 }
 
 DEFAULT_PREF = {
@@ -158,7 +162,7 @@ def s1(c:str):
     z="white"
     if COLORS[c].lightness() >= 128:
         z="black"
-    return "QPushButton, QComboBox { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+    return "QPushButton, QComboBox, QDoubleSpinBox { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
 def s2(c:str):
     z="white"
     if COLORS[c].lightness() >= 128:
@@ -168,7 +172,7 @@ def s3(c:str):
     # z="white"
     # if COLORS[c].lightness() >= 128:
     #     z="black"
-    return "QWidget { "+f'selection-background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b});'+" }"
+    return "QWidget { "+f'selection-background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b});'+" }" + "QSlider::handle::horizontal { "+f'background: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); border-radius: 4px;'+" }"
 
 COLOR_FUNCTIONS = {
     "Background": s0,
@@ -176,6 +180,36 @@ COLOR_FUNCTIONS = {
     "Text Input": s2,
     "Accent": s3
 }
+
+class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
+    anyValueChanged = pyqtSignal(float)
+    def __init__(self,text:str,min:float|None=None,max:float|None=None):
+        super().__init__()
+        self.QLabel = QLabel(text)
+        self.QSlider = QSlider(Qt.Orientation.Horizontal)
+        if min!=None and max!=None:
+            self.setRange(min,max)
+            self.QSlider.setRange(min,max*100)
+        self.QHBoxLayout = QHBoxLayout()
+        self.QHBoxLayout.addWidget(self)
+        self.QHBoxLayout.addWidget(self.QSlider)
+        self.QLayout = QVBoxLayout()
+        self.QLayout.addWidget(self.QLabel)
+        self.QLayout.addLayout(self.QHBoxLayout)
+        
+        self.QSlider.valueChanged.connect(self.slider_move)
+        self.valueChanged.connect(self.spin_change)
+    def slider_move(self):
+        self.setValue(self.QSlider.value()/100)
+        self.value_changed()
+    def spin_change(self):
+        self.QSlider.setValue(int(self.value()*100))
+        self.value_changed()
+    def value_changed(self):
+        self.anyValueChanged.emit(self.value())
+    def anySetValue(self,val:float):
+        self.setValue(val)
+        self.QSlider.setValue(int(val*100))
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -273,6 +307,20 @@ class MainWindow(QWidget):
         self.output.setStyleSheet("text-align: left;")
         self.output.setToolTip("Choose where the outputted mp3 will be located.")
 
+        model_label = QLabel("AI Voice Model:")
+        self.model = QComboBox()
+        self.model.activated.connect(self.change_model)
+        
+        self.voice_settings = QComboBox()
+        self.stability = QDoubleSpinBoxLabelSlider("AI Stability",0,1)
+        self.stability.QLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.stability.anySetValue(self.data["voice_stability"])
+        self.stability.anyValueChanged.connect(partial(self.set_voice_settings,0))
+        self.similarity = QDoubleSpinBoxLabelSlider("AI Similarity",0,1)
+        self.similarity.anySetValue(self.data["voice_similarity"])
+        self.similarity.QLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.similarity.anyValueChanged.connect(partial(self.set_voice_settings,1))
+
         self.run_btn = QPushButton("Save and Generate")
         self.run_btn.clicked.connect(self.generate)
         self.run_btn.setToolTip("Save all configurations before attempting to generate the mp3 of the AI voice.")
@@ -347,15 +395,9 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        layout.addWidget(l)
-        layout.addWidget(input_label)
-        layout.addWidget(self.text_input)
-        layout.addWidget(voice_label)
-        layout.addWidget(self.voice)
-        layout.addWidget(output_name_label)
-        layout.addWidget(self.output_input)
-        layout.addWidget(output_label)
-        layout.addWidget(self.output)
+        self.addWidgets(layout,[l,input_label,self.text_input,voice_label,self.voice,output_name_label,self.output_input,output_label,self.output,model_label,self.model])
+        layout.addLayout(self.stability.QLayout)
+        layout.addLayout(self.similarity.QLayout)
         layout.addLayout(btns_layout)
         self.setLayout(layout)
 
@@ -380,6 +422,23 @@ class MainWindow(QWidget):
             )
         except:pass
 
+        self.MODELS = []
+        req = requests.get("https://api.elevenlabs.io/v1/models",headers={"xi-api-key": self.key, "Content-Type": "application/json"})
+        for x in req.json():
+            if x["can_do_text_to_speech"]:
+                self.MODELS.append([x["model_id"],x["name"]])
+                self.model.addItem(x["name"])
+        self.model.setCurrentIndex(self.MODELS.index(self.data["voice_model"]))
+
+    def set_voice_settings(self,x:int):
+        if x == 0:
+            self.data["voice_stability"] = self.stability.value()
+        elif x == 1:
+            self.data["voice_similarity"] = self.similarity.value()
+    
+    def change_model(self):
+        self.data["voice_model"] = self.MODELS[self.model.currentIndex()]
+    
     def reset(self):
         x = QMessageBox.warning(self,"PyaiiTTS | Reset All","Are you sure you want to reset EVEYRTHING?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
         if x != QMessageBox.StandardButton.Yes: return
@@ -539,7 +598,8 @@ class MainWindow(QWidget):
 
     def generate(self):
         self.save()
-        x=self.client.generate(text=self.data["text"],voice=self.data["voice_id"])
+        voice_settings = VoiceSettings(stability=self.data['voice_stability'],similarity_boost=self.data['voice_similarity'])
+        x=self.client.generate(text=self.data["text"],voice=self.data["voice_id"],voice_settings=voice_settings,model=self.data['voice_model'][0])
         with open(f"{self.data['output_path']}{s}{self.data['output_name']}.mp3","wb") as f:
             f.write(b''.join(x))
             QMessageBox.information(self,"PyaiiTTS","TTS Success!")
