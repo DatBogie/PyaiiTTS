@@ -98,6 +98,9 @@ DEFAULT_CONF = {
     "voice_model": ["eleven_monolingual_v1", "Eleven English v1"]
 }
 
+if os.path.exists("output"):
+    DEFAULT_CONF["output_path"] = os.path.abspath("output")
+
 DEFAULT_PREF = {
     "Theme": "Dark"
 }
@@ -154,27 +157,33 @@ for n,t in THEMES.items():
     for nc,c in t.items():
         THEMES[n][nc] = RGB(c)
 
-
 def s0(c:str): # Background
     z="white"
     if COLORS[c].lightness() >= 128:
         z="black"
-    return "QWidget { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+    return "QWidget { "+f'background-color: {COLORS[c].QColor().name()}; color: {z};'+" }"
 def s1(c:str):
     z="white"
     if COLORS[c].lightness() >= 128:
         z="black"
-    return "QPushButton, QComboBox, QDoubleSpinBox { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+    x = -1 if z=="black" else 1
+    y = "dark" if z=="white" else "light"
+    return "QPushButton, QComboBox, QDoubleSpinBox, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button { padding: 2px; border-radius: 6px; "+f'border: 2px solid {COLORS[c].add(10*x).QColor().name()}; background-color: {COLORS[c].QColor().name()}; color: {z};'+" }" + """
+QPushButton:hover, QComboBox:hover, QDoubleSpinBox:hover, QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover { """+f'border: 2px solid {COLORS["Accent"].QColor().name()}; background-color: {COLORS[c].add(15).QColor().name()}'+" }" + """
+QPushButton:pressed, QComboBox:pressed, QDoubleSpinBox:pressed, QDoubleSpinBox::up-button:pressed, QDoubleSpinBox::down-button:pressed  { """+f'background-color: {COLORS[c].add(-10).QColor().name()};'+" }" + """
+QComboBox::drop-down { background: transparent; }""" + "QComboBox::down-arrow { "+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-image-{y}.png);'+" }" + """
+QDoubleSpinBox::up-arrow { """+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-up-{y}.png);'+" }" + "QDoubleSpinBox::down-arrow { "+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-image-{y}.png);'+" }"
+
 def s2(c:str):
     z="white"
     if COLORS[c].lightness() >= 128:
         z="black"
-    return "QLineEdit, QTextEdit { "+f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};'+" }"
+    return "QLineEdit, QTextEdit { "+f'background-color: {COLORS[c].QColor().name()}; color: {z};'+" }"
 def s3(c:str):
     # z="white"
     # if COLORS[c].lightness() >= 128:
     #     z="black"
-    return "QWidget { "+f'selection-background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b});'+" }" + "QSlider::handle::horizontal { "+f'background: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); border-radius: 4px;'+" }"
+    return "QWidget { "+f'selection-background-color: {COLORS[c].QColor().name()};'+" }" + "QSlider::handle::horizontal { "+f'background: {COLORS[c].QColor().name()}; border-radius: 4px;'+" }"
 
 COLOR_FUNCTIONS = {
     "Background": s0,
@@ -217,6 +226,8 @@ class MainWindow(QWidget):
     def __init__(self):
         global __start__
         super().__init__()
+        
+        self.ComboBoxes = []
 
         if __start__ == False:
             __start__ = True
@@ -284,7 +295,8 @@ class MainWindow(QWidget):
 
         voice_label = QLabel("Voice:")
 
-        self.voice = QComboBox()
+        self.voice = ComboBox(self)
+        # self.voice.view().parentWidget().setStyleSheet("background-color: white;")
         self.voice.addItems(VOICES.keys())
         try:
             self.voice.setCurrentIndex(
@@ -310,10 +322,10 @@ class MainWindow(QWidget):
         self.output.setToolTip("Choose where the outputted mp3 will be located.")
 
         model_label = QLabel("AI Voice Model:")
-        self.model = QComboBox()
+        self.model = ComboBox(self)
         self.model.activated.connect(self.change_model)
         
-        self.voice_settings = QComboBox()
+        self.voice_settings = ComboBox(self)
         self.stability = QDoubleSpinBoxLabelSlider("AI Stability",0,1)
         self.stability.QLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.stability.anySetValue(self.data["voice_stability"])
@@ -352,7 +364,7 @@ class MainWindow(QWidget):
         self.pref_tl = QLabel("Themes:")
         self.pref_tl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.pref_t = QComboBox()
+        self.pref_t = ComboBox(self)
         self.pref_t.setEditable(True)
         self.pref_t.lineEdit().setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.pref_t.lineEdit().setReadOnly(True)
@@ -566,9 +578,16 @@ class MainWindow(QWidget):
                 z="white"
                 if COLORS[c].lightness() >= 128:
                     z="black"
-                v.setStyleSheet(f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};')
+                v.setStyleSheet(f'background-color: {COLORS[c].QColor().name()}; color: {z};')
             else:
                 v.setStyleSheet("")
+        print(self.ComboBoxes)
+        for x in self.ComboBoxes:
+            if self.prefer["Theme"] != SYSTEM_THEME:
+                x.view().parentWidget().setStyleSheet(f'background-color: {COLORS["Background"].QColor().name()}')
+            else:
+                x.view().parentWidget().setStyleSheet("")
+            
 
     def change_c(self,c:str):
         def x(y:QColor):
@@ -578,7 +597,7 @@ class MainWindow(QWidget):
             # z="white"
             # if COLORS[c].lightness() >= 128:
             #     z="black"
-            # self.pref_c[c].setStyleSheet(f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};')
+            # self.pref_c[c].setStyleSheet(f'background-color: {COLORS[c].QColor().name()}; color: {z};')
         if c in COLORS.keys():
             cd = QColorDialog(COLORS[c].QColor(),self)
             cd.show()
@@ -634,6 +653,11 @@ class MainWindow(QWidget):
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Configurations",QMessageBox.StandardButton.Ok)
         except Exception as e:
             QMessageBox.critical(self,str(e),QMessageBox.StandardButton.Close)
+
+class ComboBox(QComboBox):
+    def __init__(self,app:MainWindow):
+        super().__init__()
+        app.ComboBoxes.append(self)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
