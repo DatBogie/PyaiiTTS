@@ -55,7 +55,7 @@ THEME_CHANGED = False
 
 VOICES = {}
 
-SYSTEM_THEME = "System (Requires Restart)"
+SYSTEM_THEME = "System"; LEGACY_SYSTEM_THEME = SYSTEM_THEME+" (Requires Restart)";
 PROTECTED_THEMES = ["Dark","Light",SYSTEM_THEME]
 
 DEFAULT_VOICES = {
@@ -143,6 +143,8 @@ if not os.path.exists("themes.json"):
 with open("themes.json","r") as f:
     try:
         _themes = json.load(f)
+        if LEGACY_SYSTEM_THEME in list(_themes.keys()):
+            del _themes[LEGACY_SYSTEM_THEME]
         for k, v in DEFAULT_THEMES.items():
             _themes[k] = v
     except:
@@ -518,23 +520,24 @@ class MainWindow(QWidget):
         global COLORS, THEME_CHANGED
         last_theme = self.prefer["Theme"]
         self.prefer["Theme"] = t
-        if t == SYSTEM_THEME and THEME_CHANGED:
-            x = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?\nYour configurations and preferences will be saved.",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
-            if x == QMessageBox.StandardButton.Yes:
-                self.save()
-                self.save_p()
-                self.close()
-                sys.exit()
-            else:
-                self.apply_theme(last_theme)
-                try:
-                    self.pref_t.setCurrentIndex(
-                        list(THEMES.keys()).index(self.prefer["Theme"])
-                    )
-                except:pass
-        else:
-            COLORS = THEMES[t].copy()
-            self.set_style()
+        # if t == SYSTEM_THEME and THEME_CHANGED:
+        #     x = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?\nYour configurations and preferences will be saved.",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+        #     if x == QMessageBox.StandardButton.Yes:
+        #         self.save()
+        #         self.save_p()
+        #         self.close()
+        #         sys.exit()
+        #     else:
+        #         self.apply_theme(last_theme)
+        #         try:
+        #             self.pref_t.setCurrentIndex(
+        #                 list(THEMES.keys()).index(self.prefer["Theme"])
+        #             )
+        #         except:pass
+        # else:
+        #^
+        COLORS = THEMES[t].copy()
+        self.set_style()
         THEME_CHANGED = True
 
     def addWidgets(self,x:QHBoxLayout|QVBoxLayout,y:list[QWidget]):
@@ -556,11 +559,16 @@ class MainWindow(QWidget):
     def set_style(self):
         if self.prefer["Theme"] != SYSTEM_THEME:
             self.setStyleSheet(self.get_style())
-            for c,v in self.pref_c.items():
+        else:
+            self.setStyleSheet("")
+        for c,v in self.pref_c.items():
+            if self.prefer["Theme"] != SYSTEM_THEME:
                 z="white"
                 if COLORS[c].lightness() >= 128:
                     z="black"
                 v.setStyleSheet(f'background-color: rgb({COLORS[c].r},{COLORS[c].g},{COLORS[c].b}); color: {z};')
+            else:
+                v.setStyleSheet("")
 
     def change_c(self,c:str):
         def x(y:QColor):
