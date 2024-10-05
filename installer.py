@@ -139,7 +139,7 @@ class MainWindow(QWidget):
                 if (asset["name"].find("win") != -1 and sys.platform == "win32") or (asset["name"].find(sys.platform) != -1 and sys.platform != "win32"):
                     asset_url = asset["url"]
                     asset_name = asset["name"]
-                    # break
+                    break
             print(asset_url,asset_name)
             if asset_url:
                 headers = {'Accept': 'application/octet-stream'}
