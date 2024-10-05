@@ -4,3 +4,7 @@ voices.json
 conf.json
 pref.json
 .venv
+installer.spec
+main.spec
+build
+dist
