@@ -45,8 +45,8 @@ class MainWindow(QWidget):
     
     def update(self):
         try:
-            p = self.def_loc+"/PyaiiTTS"
-            if not os.path.exists(p): p = self.dir+"/PyaiiTTS"
+            p = self.def_loc+"/PyaiiTTS/"
+            if not os.path.exists(p): p = self.dir+"/PyaiiTTS/"
             if not os.path.exists(p): self.error("Error: No valid directory found."); return
             exec_file,exec_name = self.dl_exec()
             with open(p+exec_name,"wb") as f:
@@ -57,6 +57,9 @@ class MainWindow(QWidget):
             for x in os.scandir(p):
                 if x.is_file() and x.name != exec_name and x.name.find(self.platName):
                     os.remove(x.path)
+            if os.path.exists(p+"assets"):
+                shutil.rmtree(p+"assets")
+            self.dl_assets()
             QMessageBox.information(self,"PyaiiTTS Installer | Update","Update successfully installed!",QMessageBox.StandardButton.Ok)
         except Exception as e:
             self.error(e)
@@ -78,6 +81,7 @@ class MainWindow(QWidget):
                 st = os.stat(self.dir+"/PyaiiTTS/"+exec_name)
                 os.chmod(self.dir+"/PyaiiTTS/"+exec_name, st.st_mode | 0o111)
             os.mkdir(self.dir+"/PyaiiTTS/output")
+            self.dl_assets()
             QMessageBox.information(self,"PyaiiTTS Installer | Install","PyaiiTTS successfully installed!",QMessageBox.StandardButton.Ok)
         except Exception as e:
             self.error(e)
@@ -94,8 +98,34 @@ class MainWindow(QWidget):
         except Exception as e:
             self.error(e)
     
-    def dl_assets(self) -> tuple[str,str]:
-        api_url = f"https://api.github.com/repos/DatBogie/PyaiiTTS/contents/assets"
+    def dl_assets(self,path:str|None=None,subdir:str=""):
+        try:
+            if not path:
+                path = self.dir+"/PyaiiTTS/assets/"
+            api_url = f"https://api.github.com/repos/DatBogie/PyaiiTTS/contents/assets{subdir}"
+            response = requests.get(api_url)
+            response.raise_for_status()
+            
+            assets = response.json()
+            
+            if not os.path.exists(path):
+                os.mkdir(path)
+            
+            for asset in assets:
+                if asset["type"] == "file":
+                    asset_url = asset["download_url"]
+                    asset_response = requests.get(asset_url)
+                    asset_response.raise_for_status()
+                    
+                    asset_path = os.path.join(path,asset["name"])
+                    with open(asset_path,"wb") as f:
+                        f.write(asset_response.content)
+                    print(f"Downloaded {asset_path}")
+                elif asset["type"] == "dir":
+                    self.dl_assets(os.path.join(path,asset["name"]),asset["name"])
+            
+        except Exception as e:
+            self.error(e)
         
     def dl_exec(self) -> tuple[str,str]:
         api_url = f"https://api.github.com/repos/DatBogie/PyaiiTTS/releases/latest"
