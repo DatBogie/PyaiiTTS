@@ -15,6 +15,12 @@ s = "/"
 if sys.platform == "win32":
     s = "\\"
     root = "C:\\"
+    
+def LOG(e:Exception|str):
+    if not os.path.exists("log.txt"):
+        with open("log.txt","w") as f:pass
+    with open("log.txt","a") as f:
+        f.write("\n"+str(e))
 
 class RGB():
     def __init__(self,r:int|QColor|list[int,int,int]|tuple[int,int,int]=-1,g:int=0,b:int=0):
@@ -113,11 +119,12 @@ if not os.path.exists("voices.json"):
 with open("voices.json","r") as f:
     try:
         VOICES = json.load(f)
-    except:
+    except Exception as e:
+        LOG(e)
         VOICES = DEFAULT_VOICES
         try:
             os.rename("voices.json","voices (backup).json")
-        except:pass
+        except Exception as e:LOG(e)
         with open("voices.json","w") as f:
             json.dump(DEFAULT_VOICES,f)
 
@@ -150,7 +157,8 @@ with open("themes.json","r") as f:
             del _themes[LEGACY_SYSTEM_THEME]
         for k, v in DEFAULT_THEMES.items():
             _themes[k] = v
-    except:
+    except Exception as e:
+        LOG(e)
         _themes = DEFAULT_THEMES
     THEMES:dict = _themes
 for n,t in THEMES.items():
@@ -238,12 +246,14 @@ class MainWindow(QWidget):
                 if req.status_code == 200:
                     self.key = key
                 else:
+                    LOG("Invalid API key in key.txt.")
                     x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key found in key.txt.\nPlease enter a valid key into key.txt and relaunch.",QMessageBox.StandardButton.Ok)
                     self.close()
                     sys.exit()
             else:
                 key, s = QInputDialog.getText(self,"PyaiiTTS | Get API Key","Please enter your elevenlabs.io API key.")
                 if not s:
+                    LOG("User failed to provide key.")
                     raise Exception("Please paste your elevenlabs.io key into key.txt")
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
@@ -251,6 +261,7 @@ class MainWindow(QWidget):
                     with open("key.txt","w") as f:
                         f.write(key)
                 else:
+                    LOG("User entered invalid API key.")
                     x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key.\nPlease relaunch and try again.",QMessageBox.StandardButton.Ok)
                     self.close()
                     sys.exit()
@@ -262,7 +273,8 @@ class MainWindow(QWidget):
             with open("conf.json","r") as f:
                 try:
                     data = json.load(f)
-                except:
+                except Exception as e:
+                    LOG(e)
                     data = DEFAULT_CONF
             self.data = data
 
@@ -272,7 +284,8 @@ class MainWindow(QWidget):
             with open("pref.json","r") as f:
                 try:
                     prefer = json.load(f)
-                except:
+                except Exception as e:
+                    LOG(e)
                     prefer = DEFAULT_PREF
             self.prefer = prefer
 
@@ -302,7 +315,7 @@ class MainWindow(QWidget):
             self.voice.setCurrentIndex(
                 list(VOICES.values()).index(self.data["voice_id"])
             )
-        except:pass
+        except Exception as e:LOG(e)
         self.voice.setToolTip("Choose which voice you want the AI to speak in.\nMore voices can be added by editing the voices.json file.")
 
         self.voice.activated.connect(self.change_voice)
@@ -434,7 +447,7 @@ class MainWindow(QWidget):
             self.pref_t.setCurrentIndex(
                 list(THEMES.keys()).index(self.prefer["Theme"])
             )
-        except:pass
+        except Exception as e:LOG(e)
 
         self.MODELS = []
         req = requests.get("https://api.elevenlabs.io/v1/models",headers={"xi-api-key": self.key, "Content-Type": "application/json"})
@@ -545,7 +558,7 @@ class MainWindow(QWidget):
         #             self.pref_t.setCurrentIndex(
         #                 list(THEMES.keys()).index(self.prefer["Theme"])
         #             )
-        #         except:pass
+        #          Exception as e:LOG(e)
         # else:
         #^
         COLORS = THEMES[t].copy()
