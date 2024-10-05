@@ -10,7 +10,7 @@ class MainWindow(QWidget):
         self.setWindowTitle("PyaiiTTS Installer")
         self.setFixedSize(self.minimumSize())
         self.platName = "win" if sys.platform == "win32" else sys.platform
-        self.def_loc = f"/home/{USER}/.local/share" if sys.platform != "win32" else f"C:/Users/{USER}/AppData/Local"
+        self.def_loc = f"/home/{USER}/.local/share" if sys.platform != "win32" else f"C:/Users/{USER}/AppData/Local/Programs"
         self.dir = self.def_loc
         
         self.choosedir = QPushButton("Choose Program Directory ("+self.dir+")")
@@ -55,7 +55,7 @@ class MainWindow(QWidget):
                 st = os.stat(p+exec_name)
                 os.chmod(p+exec_name, st.st_mode | 0o111)
             for x in os.scandir(p):
-                if x.is_file() and x.name != exec_name and x.name.find(self.platName):
+                if x.is_file() and x.name != exec_name and x.name.find(self.platName) != -1:
                     os.remove(x.path)
             if os.path.exists(p+"assets"):
                 shutil.rmtree(p+"assets")
@@ -136,10 +136,10 @@ class MainWindow(QWidget):
             asset_url = None
             asset_name = ""
             for asset in release_info["assets"]:
-                if asset["name"].find("linux"):
+                if (asset["name"].find("win") != -1 and sys.platform == "win32") or (asset["name"].find(sys.platform) != -1 and sys.platform != "win32"):
                     asset_url = asset["url"]
                     asset_name = asset["name"]
-                    break
+                    # break
             print(asset_url,asset_name)
             if asset_url:
                 headers = {'Accept': 'application/octet-stream'}
