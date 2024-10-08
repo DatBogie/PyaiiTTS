@@ -4,3 +4,6 @@ A simple python program that generates an mp3 of an AI voice using [elevenlabs](
 
 Make sure to create a `key.txt` file in the same directory as the PyaiiTTS executable and paste in your elevenlabs API key!
 Note that PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, & `voices.json` in the directory that the executable is placed in!
+
+Please don't download from the releases page directly. instead...
+# [DOWNLOAD HERE](https://github.com/DatBogie/PyaiiTTS-Installer/releases/latest)
