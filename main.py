@@ -1,6 +1,6 @@
 import sys, json, os
 from PyQt6.QtGui import QColor, QFont
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox
 from PyQt6.QtCore import Qt, pyqtSignal
 from functools import partial
 from elevenlabs.client import ElevenLabs
@@ -65,10 +65,58 @@ SYSTEM_THEME = "System"; LEGACY_SYSTEM_THEME = SYSTEM_THEME+" (Requires Restart)
 PROTECTED_THEMES = ["Dark","Light",SYSTEM_THEME]
 
 DEFAULT_VOICES = {
-    "John": "fTt87DbpNDYfGLhYRaCj",
     "Adam": "pNInz6obpgDQGcFmaJgB",
-    "Wheatly": "wbkTEiY2duHYPGxRIrMb",
-    "Heavy": "NXdARWuv0JFJUqSTb4RI"
+    "Alice": "Xb7hH8MSUJpSbSDYk0k2",
+    "Antoni": "ErXwobaYiN019PkySvjV",
+    "Aria": "9BWtsMINqrJLrRacOk9x",
+    "Arnold": "VR6AewLTigWG4xSOukaG",
+    "Bill": "pqHfZKP75CvOlQylNhV4",
+    "Brian": "nPczCjzI2devNBz1zQrb",
+    "Callum": "N2lVS1w4EtoT3dr4eOWO",
+    "Charlie": "IKne3meq5aSn9XLyUdCD",
+    "Charlotte": "XB0fDUnXU5powFXDhCwa",
+    "Chris": "iP95p4xoKVk53GoZ742B",
+    "Clyde": "2EiwWnXFnvU5JabPnv8n",
+    "Daniel": "onwK4e9ZLuTAKqWW03F9",
+    "Dave": "CYw3kZ02Hs0563khs1Fj",
+    "Domi": "AZnzlk1XvdvUeBnXmlld",
+    "Dorothy": "ThT5KcBeYPX3keUQqHPh",
+    "Drew": "29vD33N1CtxCmqQRPOHJ",
+    "Elli": "MF3mGyEYCl7XYWbV9V6O",
+    "Emily": "LcfcDJNUP1GQjkzn1xUU",
+    "Eric": "cjVigY5qzO86Huf0OWal",
+    "Ethan": "g5CIjZEefAph4nQFvHAz",
+    "Fin": "D38z5RcWu1voky8WS1ja",
+    "Freya": "jsCqWAovK2LkecY7zXl4",
+    "George": "JBFqnCBsd6RMkjVDRZzb",
+    "Gigi": "jBpfuIE2acCO8z3wKNLl",
+    "Giovanni": "zcAOhNBS3c14rBihAFp1",
+    "Glinda": "z9fAnlkpzviPz146aGWa",
+    "Grace": "oWAxZDx7w5VEj9dCyTzz",
+    "Harry": "SOYHLrjzK2X1ezoPC6cr",
+    "James": "ZQe5CZNOzWyzPSCn5a3c",
+    "Jeremy": "bVMeCyTHy58xNoL34h3p",
+    "Jessica": "cgSgspJ2msm6clMCkdW9",
+    "Jessie": "t0jbNlBVZ17f02VDIeMI",
+    "Joseph": "TxGEqnHWrfWFTfGW9XjX",
+    "Josh": "TxGEqnHWrfWFTfGW9XjX",
+    "Laura": "FGY2WhTYpPnrIDTdsKH5",
+    "Liam": "TX3LPaxmHKxFdv7VOQHJ",
+    "Lily": "pFZP5JQG7iQjIQuC4Bku",
+    "Matilda": "XrExE9yKIg1WjnnlVkGX",
+    "Michael": "flq6f7yk4E4fJM5XTYuZ",
+    "Mimi": "zrHiDhphv9ZnVXBqCLjz",
+    "Nicole": "piTKgcLEGmPE4e6mEKli",
+    "Patrick": "ODq5zmih8GrVes37Dizd",
+    "Paul": "5Q0t7uMcjvnagumLfvZi",
+    "Rachel": "21m00Tcm4TlvDq8ikWAM",
+    "River": "SAz9YHcvj6GT2YYXdXww",
+    "Roger": "CwhRBWXzGAHq8TQ4Fs17",
+    "Sam": "yoZ06aMxZJJ28mfd3POQ",
+    "Sarah": "EXAVITQu4vr4xnSDxMaL",
+    "Serena": "pMsXgVXv3BLzUgSXRplE",
+    "Thomas": "GBv7mTt0atIp3Br8iCZE",
+    "Will": "bIHbv24MWmeRgasZH58o"
 }
 
 DEFAULT_THEMES = {
@@ -108,7 +156,8 @@ if os.path.exists("output"):
     DEFAULT_CONF["output_path"] = os.path.abspath("output")
 
 DEFAULT_PREF = {
-    "Theme": "Dark"
+    "Theme": "Dark",
+    "NativeWidgets": False
 }
 
 
@@ -135,8 +184,6 @@ with open("voices.json","r") as f:
 #     "Wheatly": "wbkTEiY2duHYPGxRIrMb",
 #     "Heavy": "NXdARWuv0JFJUqSTb4RI"
 # }
-
-# print(RGB(255,0,0))
 
 COLORS = {
     "Button": RGB(45,45,45), # buttons, etc
@@ -191,7 +238,7 @@ def s3(c:str):
     # z="white"
     # if COLORS[c].lightness() >= 128:
     #     z="black"
-    return "QWidget { "+f'selection-background-color: {COLORS[c].QColor().name()};'+" }" + "QSlider::handle::horizontal { "+f'background: {COLORS[c].QColor().name()}; border-radius: 4px;'+" }"
+    return "QWidget { "+f'selection-background-color: {COLORS[c].QColor().name()};'+" }" + "QSlider::handle:horizontal { "+f'background: {COLORS[c].QColor().name()};'+" }" + "QSlider::sub-page:horizontal { "+f'background: {COLORS[c].QColor().name()}'+" }" + "QSlider::add-page:horizontal { "+f'background: {COLORS["Button"].QColor().name()};'+" }"
 
 COLOR_FUNCTIONS = {
     "Background": s0,
@@ -292,6 +339,9 @@ class MainWindow(QWidget):
             self.client = ElevenLabs(
                 api_key=self.key
             )
+        
+        if ((not "NativeWidgets" in self.prefer) and (not DEFAULT_PREF["NativeWidgets"])) or (not self.prefer["NativeWidgets"]):
+            app.setStyle("fusion")
 
         self.setWindowTitle("PyaiiTTS")
         self.setMinimumSize(800,600)
@@ -317,7 +367,6 @@ class MainWindow(QWidget):
             )
         except Exception as e:LOG(e)
         self.voice.setToolTip("Choose which voice you want the AI to speak in.\nMore voices can be added by editing the voices.json file.")
-
         self.voice.activated.connect(self.change_voice)
 
         output_name_label = QLabel("Ouput Name:")
@@ -404,11 +453,19 @@ class MainWindow(QWidget):
 
         self.pref_t_remove = QPushButton("Remove Theme...")
         self.pref_t_remove.clicked.connect(self.remove_theme)
+        
+        self.pref_native = QCheckBox("Use Native Widget Style")
+        self.pref_native.setToolTip("Skip forcing the app to use the Fusion style.")
+        if self.prefer["NativeWidgets"]:
+            self.pref_native.setChecked(self.prefer["NativeWidgets"])
+        else:
+            self.pref_native.setChecked(DEFAULT_PREF["NativeWidgets"])
+        self.pref_native.checkStateChanged.connect(self.toggle_native)
 
         self.pref_reset = QPushButton("⚠️ Reset Everything ⚠️")
         self.pref_reset.clicked.connect(self.reset)
 
-        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_reset])
+        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_native,self.pref_reset])
 
         self.pref.setLayout(pref_layout)
 
@@ -457,6 +514,9 @@ class MainWindow(QWidget):
                 self.model.addItem(x["name"])
         self.model.setCurrentIndex(self.MODELS.index(self.data["voice_model"]))
 
+    def toggle_native(self):
+        self.prefer["NativeWidgets"] = self.pref_native.isChecked()
+    
     def set_voice_settings(self,x:int):
         if x == 0:
             self.data["voice_stability"] = self.stability.value()
@@ -492,7 +552,6 @@ class MainWindow(QWidget):
             for y, x in v.items():
                 _themes[k][y] = x.get()
         try:
-            # print(_themes)
             with open("themes.json","w") as f:
                 json.dump(_themes,f)
         except Exception as e:
@@ -512,7 +571,6 @@ class MainWindow(QWidget):
             e = self.dump_THEMES()
             if e: QMessageBox.critical(self,"PyaiiTTS | Remove Theme",str(e)); return
             if self.prefer["Theme"] == name:
-                print()
                 self.apply_theme(list(THEMES.keys())[(ind-1 if list(THEMES.keys())[ind-1] != SYSTEM_THEME else 0) if ind > 0 else 0])
                 self.pref_t.setCurrentIndex(
                     list(THEMES.keys()).index(self.prefer["Theme"])
@@ -594,7 +652,6 @@ class MainWindow(QWidget):
                 v.setStyleSheet(f'background-color: {COLORS[c].QColor().name()}; color: {z};')
             else:
                 v.setStyleSheet("")
-        print(self.ComboBoxes)
         for x in self.ComboBoxes:
             if self.prefer["Theme"] != SYSTEM_THEME:
                 x.view().parentWidget().setStyleSheet(f'background-color: {COLORS["Background"].QColor().name()}')

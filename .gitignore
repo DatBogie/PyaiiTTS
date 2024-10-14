@@ -1,10 +1,8 @@
-key.txt
-themes.json
-voices.json
-conf.json
-pref.json
+*.txt
+*.json
 .venv
-installer.spec
-main.spec
+*.spec
 build
 dist
+output
+!Custom Voices/*/*
