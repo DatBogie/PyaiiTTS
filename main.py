@@ -15,11 +15,16 @@ s = "/"
 if sys.platform == "win32":
     s = "\\"
     root = "C:\\"
+if getattr(sys,"frozen",False):
+    pdir = os.path.dirname(sys.executable)
+else:
+    pdir = os.path.dirname(os.path.abspath(__file__))
+print(pdir)
     
 def LOG(e:Exception|str):
-    if not os.path.exists("log.txt"):
-        with open("log.txt","w") as f:pass
-    with open("log.txt","a") as f:
+    if not os.path.exists(pdir+"g.txt"):
+        with open(pdir+"g.txt","w") as f:pass
+    with open(pdir+"g.txt","a") as f:
         f.write("\n"+str(e))
 
 class RGB():
@@ -161,20 +166,20 @@ DEFAULT_PREF = {
 }
 
 
-if not os.path.exists("voices.json"):
-    with open("voices.json","w") as f:
+if not os.path.exists(pdir+"voices.json"):
+    with open(pdir+"voices.json","w") as f:
         json.dump(DEFAULT_VOICES,f)
         # f.write('{"John": "fTt87DbpNDYfGLhYRaCj", "Adam": "pNInz6obpgDQGcFmaJgB", "Wheatly": "wbkTEiY2duHYPGxRIrMb", "Heavy": "NXdARWuv0JFJUqSTb4RI"}')
-with open("voices.json","r") as f:
+with open(pdir+"voices.json","r") as f:
     try:
         VOICES = json.load(f)
     except Exception as e:
         LOG(e)
         VOICES = DEFAULT_VOICES
         try:
-            os.rename("voices.json","voices (backup).json")
+            os.rename(pdir+"voices.json","voices (backup).json")
         except Exception as e:LOG(e)
-        with open("voices.json","w") as f:
+        with open(pdir+"voices.json","w") as f:
             json.dump(DEFAULT_VOICES,f)
 
 
@@ -193,11 +198,11 @@ COLORS = {
 }
 
 
-if not os.path.exists("themes.json"):
-    with open("themes.json","w") as f:
+if not os.path.exists(pdir+"themes.json"):
+    with open(pdir+"themes.json","w") as f:
         json.dump(DEFAULT_THEMES,f)
 
-with open("themes.json","r") as f:
+with open(pdir+"themes.json","r") as f:
     try:
         _themes = json.load(f)
         if LEGACY_SYSTEM_THEME in list(_themes.keys()):
@@ -312,12 +317,12 @@ class MainWindow(QWidget):
                     x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key.\nPlease relaunch and try again.",QMessageBox.StandardButton.Ok)
                     self.close()
                     sys.exit()
-            if not os.path.exists("conf.json"):
-                with open("conf.json","w") as f:
+            if not os.path.exists(pdir+"conf.json"):
+                with open(pdir+"conf.json","w") as f:
                     json.dump(DEFAULT_CONF,f)
                     # f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
 
-            with open("conf.json","r") as f:
+            with open(pdir+"conf.json","r") as f:
                 try:
                     data = json.load(f)
                 except Exception as e:
@@ -325,10 +330,10 @@ class MainWindow(QWidget):
                     data = DEFAULT_CONF
             self.data = data
 
-            if not os.path.exists("pref.json"):
-                with open("pref.json","w") as f:
+            if not os.path.exists(pdir+"pref.json"):
+                with open(pdir+"pref.json","w") as f:
                     json.dump(DEFAULT_PREF,f)
-            with open("pref.json","r") as f:
+            with open(pdir+"pref.json","r") as f:
                 try:
                     prefer = json.load(f)
                 except Exception as e:
@@ -539,8 +544,8 @@ class MainWindow(QWidget):
             "voices.json"
         ]
         for v in to_remove:
-            if os.path.exists(v):
-                os.remove(v)
+            if os.path.exists(pdir+v):
+                os.remove(pdir+v)
         z = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
         if z != QMessageBox.StandardButton.Yes: return
         self.close()
@@ -552,7 +557,7 @@ class MainWindow(QWidget):
             for y, x in v.items():
                 _themes[k][y] = x.get()
         try:
-            with open("themes.json","w") as f:
+            with open(pdir+"themes.json","w") as f:
                 json.dump(_themes,f)
         except Exception as e:
             return e
@@ -705,7 +710,7 @@ class MainWindow(QWidget):
         try:
             # self.setWindowTitle("PyaiiTTS")
             # prefer = {"Theme": self.prefer["Theme"]}
-            with open("pref.json","w") as f:
+            with open(pdir+"pref.json","w") as f:
                 json.dump(self.prefer,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Preferences",QMessageBox.StandardButton.Ok)
         except Exception as e:
@@ -718,7 +723,7 @@ class MainWindow(QWidget):
             self.change_voice()
             # self.setWindowTitle("PyaiiTTS")
             # data = {"output_path": self.data["output_path"], "voice_id": self.data["voice_id"], "text": self.data["text"], "output_name": self.data["output_name"]}
-            with open("conf.json","w") as f:
+            with open(pdir+"conf.json","w") as f:
                 json.dump(self.data,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Configurations",QMessageBox.StandardButton.Ok)
         except Exception as e:

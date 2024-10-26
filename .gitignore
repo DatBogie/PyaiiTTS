@@ -6,3 +6,5 @@ build
 dist
 output
 !Custom Voices/*/*
+main
+installer
