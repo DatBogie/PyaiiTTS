@@ -11,15 +11,12 @@ from elevenlabs import VoiceSettings
 __start__ = False
 
 root = "/"
-s = "/"
 if sys.platform == "win32":
-    s = "\\"
     root = "C:\\"
 if getattr(sys,"frozen",False):
-    pdir = os.path.dirname(sys.executable)
+    pdir = os.path.dirname(sys.executable)+"/"
 else:
-    pdir = os.path.dirname(os.path.abspath(__file__))
-print(pdir)
+    pdir = os.path.dirname(os.path.abspath(__file__))+"/"
     
 def LOG(e:Exception|str):
     if not os.path.exists(pdir+"g.txt"):
@@ -702,7 +699,7 @@ class MainWindow(QWidget):
         self.save()
         voice_settings = VoiceSettings(stability=self.data['voice_stability'],similarity_boost=self.data['voice_similarity'])
         x=self.client.generate(text=self.data["text"],voice=self.data["voice_id"],voice_settings=voice_settings,model=self.data['voice_model'][0])
-        with open(f"{self.data['output_path']}{s}{self.data['output_name']}.mp3","wb") as f:
+        with open(f"{self.data['output_path']}/{self.data['output_name']}.mp3","wb") as f:
             f.write(b''.join(x))
             QMessageBox.information(self,"PyaiiTTS","TTS Success!")
 
