@@ -19,9 +19,9 @@ else:
     pdir = os.path.dirname(os.path.abspath(__file__))+"/"
     
 def LOG(e:Exception|str):
-    if not os.path.exists(pdir+"g.txt"):
-        with open(pdir+"g.txt","w") as f:pass
-    with open(pdir+"g.txt","a") as f:
+    if not os.path.exists(pdir+"log.txt"):
+        with open(pdir+"log.txt","w") as f:pass
+    with open(pdir+"log.txt","a") as f:
         f.write("\n"+str(e))
 
 class RGB():
@@ -288,8 +288,8 @@ class MainWindow(QWidget):
 
         if __start__ == False:
             __start__ = True
-            if os.path.exists("key.txt"):
-                with open("key.txt","r") as f:
+            if os.path.exists(pdir+"key.txt"):
+                with open(pdir+"key.txt","r") as f:
                     key = f.read().strip()
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
@@ -307,7 +307,7 @@ class MainWindow(QWidget):
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
                     self.key = key
-                    with open("key.txt","w") as f:
+                    with open(pdir+"key.txt","w") as f:
                         f.write(key)
                 else:
                     LOG("User entered invalid API key.")
