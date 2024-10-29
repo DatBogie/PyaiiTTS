@@ -145,7 +145,7 @@ DEFAULT_THEMES = {
 }
 
 DEFAULT_CONF = {
-    "output_path": root + ("\\" if sys.platform == "win32" else ""),
+    "output_path": root + ("\\" if sys.platform == "win32" else "/"),
     "voice_id": "",
     "text": "",
     "output_name": "",
