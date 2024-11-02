@@ -518,6 +518,15 @@ class MainWindow(QWidget):
         gpt_gen = QPushButton("Generate")
         gpt_gen.clicked.connect(self.generate_gpt)
         
+        self.gpt_model = ComboBox(self)
+        try:
+            self.gpt_model.addItems(self.gpt_get_models(oai_key))
+        except Exception as e:LOG(e)
+        
+        gpt_gen_layout = QHBoxLayout()
+        gpt_gen_layout.addWidget(gpt_gen)
+        gpt_gen_layout.addWidget(self.gpt_model)
+        
         self.gpt_output = QTextEdit()
         self.gpt_output.setPlaceholderText("Outputted generation will appear here.")
         self.gpt_output.setEnabled(False)
@@ -535,7 +544,7 @@ class MainWindow(QWidget):
         gpt_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         gpt_layout.addWidget(self.gpt_key)
         gpt_layout.addWidget(self.gpt_prompt)
-        gpt_layout.addWidget(gpt_gen)
+        gpt_layout.addLayout(gpt_gen_layout)
         gpt_layout.addWidget(self.gpt_output)
         gpt_layout.addLayout(gpt_btns_layout)
         
@@ -586,6 +595,14 @@ class MainWindow(QWidget):
                 self.model.addItem(x["name"])
         self.model.setCurrentIndex(self.MODELS.index(self.data["voice_model"]))
 
+    def gpt_get_models(self,oai_key:str):
+        gpt_models = []
+        with OpenAI(api_key=oai_key) as client:
+            for x in client.models.list().data:
+                if x.id.startswith("gpt-"):
+                    gpt_models.append(x.id)
+        return gpt_models
+    
     def toggle_native(self):
         self.prefer["NativeWidgets"] = self.pref_native.isChecked()
     
@@ -621,6 +638,9 @@ class MainWindow(QWidget):
     def save_gpt_key(self):
         with open(pdir+"openai-key.txt","w") as f:
             f.write(self.gpt_key.text().strip())
+        if self.gpt_model.count() < 1:
+            self.gpt_model.clear()
+            self.gpt_model.addItems(self.gpt_get_models(self.gpt_key.text().strip()))
 
     def dump_THEMES(self):
         _themes = THEMES.copy()
