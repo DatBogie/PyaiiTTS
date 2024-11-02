@@ -1,12 +1,12 @@
-import sys, json, os
-from PyQt6.QtGui import QColor, QFont
+import sys, json, os, requests, pyclip
+from PyQt6.QtGui import QColor, QTextOption
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QEvent
 from functools import partial
 from elevenlabs.client import ElevenLabs
 from random import randrange
-import requests
 from elevenlabs import VoiceSettings
+from openai import OpenAI
 
 __start__ = False
 
@@ -251,11 +251,11 @@ COLOR_FUNCTIONS = {
 
 class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
     anyValueChanged = pyqtSignal(float)
-    def __init__(self,text:str,min:float|None=None,max:float|None=None):
+    def __init__(self,text:str,min:float=None,max:float=None,step:float=None):
         super().__init__()
         self.QLabel = QLabel(text)
         self.QSlider = QSlider(Qt.Orientation.Horizontal)
-        if min!=None and max!=None:
+        if min and max:
             self.setRange(min,max)
             self.QSlider.setRange(min,max*100)
         self.QHBoxLayout = QHBoxLayout()
@@ -264,6 +264,11 @@ class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
         self.QLayout = QVBoxLayout()
         self.QLayout.addWidget(self.QLabel)
         self.QLayout.addLayout(self.QHBoxLayout)
+        
+        if not step:
+            self.setStepType(QDoubleSpinBox.StepType.AdaptiveDecimalStepType)
+        else:
+            self.setSingleStep(step)
         
         self.QSlider.valueChanged.connect(self.slider_move)
         self.valueChanged.connect(self.spin_change)
@@ -278,6 +283,16 @@ class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
     def anySetValue(self,val:float):
         self.setValue(val)
         self.QSlider.setValue(int(val*100))
+
+class QTextEditWrap(QTextEdit):
+    def __init__(self,text:str=None):
+        super().__init__(text)
+        self.installEventFilter(self)
+    def eventFilter(self,source,event):
+        if source == self and event.type() == QEvent.Type.KeyPress:
+            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+                return True
+        return super().eventFilter(source, event)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -354,9 +369,11 @@ class MainWindow(QWidget):
 
         input_label = QLabel("Text:")
 
-        self.text_input = QTextEdit(self.data["text"])
+        self.text_input = QTextEditWrap(self.data["text"])
         self.text_input.setPlaceholderText("Enter the text to be spoken here...")
-        self.text_input.setToolTip("Put the text you want the AI voice to say here.")
+        self.text_input.setToolTip("Put the text you want the AI voice to say here.\nLine breaks are not allowed.")
+        
+        open_gpt = QPushButton("Generate Text...")
 
         voice_label = QLabel("Voice:")
 
@@ -415,7 +432,9 @@ class MainWindow(QWidget):
         self.pref_btn.setMaximumWidth(25)
         self.pref_btn.setToolTip("Edit preferences.")
 
-        self.pref = QFrame(self)
+        # Preferences
+
+        self.pref = QWidget(self)
         self.pref.setWindowTitle("PyaiiTTS | Preferences")
         self.pref.setWindowFlag(Qt.WindowType.Popup, True)
         self.pref.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),self.y()+int((self.height()-(self.height()/1.1))/2),0,0)
@@ -472,6 +491,57 @@ class MainWindow(QWidget):
         self.pref.setLayout(pref_layout)
 
         self.pref_btn.clicked.connect(self.show_pref)
+        
+        # GPT
+        
+        self.gpt = QWidget(self)
+        self.gpt.setWindowTitle("PyaiiTTS | Generate Text")
+        self.gpt.setWindowFlag(Qt.WindowType.Popup, True)
+        self.gpt.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),self.y()+int((self.height()-(self.height()/1.1))/2),0,0)
+        self.gpt.setFixedSize(int(self.width()/1.1),int(self.height()/1.1))
+        
+        oai_key = ""   
+        try:
+            if not os.path.exists(pdir+"openai-key.txt"):
+                with open(pdir+"openai-key.txt","w") as f:f.write("")
+            with open(pdir+"openai-key.txt","r") as f:
+                oai_key = f.read().strip()
+        except Exception as e:LOG(e)
+        
+        self.gpt_key = QLineEdit(oai_key)
+        self.gpt_key.setPlaceholderText("Enter OpenAI key here...")
+        self.gpt_key.editingFinished.connect(self.save_gpt_key)
+        
+        self.gpt_prompt = QTextEdit()
+        self.gpt_prompt.setPlaceholderText("Enter GPT prompt text here...")
+        
+        gpt_gen = QPushButton("Generate")
+        gpt_gen.clicked.connect(self.generate_gpt)
+        
+        self.gpt_output = QTextEdit()
+        self.gpt_output.setPlaceholderText("Outputted generation will appear here.")
+        self.gpt_output.setEnabled(False)
+        
+        gpt_set_output = QPushButton("Overwrite")
+        gpt_copy_output = QPushButton("Copy")
+        gpt_set_output.clicked.connect(self.set_from_output)
+        gpt_copy_output.clicked.connect(self.copy_output)
+        
+        gpt_btns_layout = QHBoxLayout()
+        gpt_btns_layout.addWidget(gpt_set_output)
+        gpt_btns_layout.addWidget(gpt_copy_output)
+        
+        gpt_layout = QVBoxLayout()
+        gpt_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        gpt_layout.addWidget(self.gpt_key)
+        gpt_layout.addWidget(self.gpt_prompt)
+        gpt_layout.addWidget(gpt_gen)
+        gpt_layout.addWidget(self.gpt_output)
+        gpt_layout.addLayout(gpt_btns_layout)
+        
+        self.gpt.setLayout(gpt_layout)
+        
+        open_gpt.clicked.connect(self.show_gpt)
 
         btns_layout = QHBoxLayout()
         btns_layout.addWidget(self.run_btn)
@@ -481,7 +551,7 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.addWidgets(layout,[l,input_label,self.text_input,voice_label,self.voice,output_name_label,self.output_input,output_label,self.output,model_label,self.model])
+        self.addWidgets(layout,[l,input_label,self.text_input,open_gpt,voice_label,self.voice,output_name_label,self.output_input,output_label,self.output,model_label,self.model])
         layout.addLayout(self.stability.QLayout)
         layout.addLayout(self.similarity.QLayout)
         layout.addLayout(btns_layout)
@@ -547,6 +617,10 @@ class MainWindow(QWidget):
         if z != QMessageBox.StandardButton.Yes: return
         self.close()
         sys.exit()
+
+    def save_gpt_key(self):
+        with open(pdir+"openai-key.txt","w") as f:
+            f.write(self.gpt_key.text().strip())
 
     def dump_THEMES(self):
         _themes = THEMES.copy()
@@ -633,6 +707,11 @@ class MainWindow(QWidget):
         self.pref.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),(self.y()+int((self.height()-(self.height()/1.1))/2)),0,0)
         self.pref.setFixedSize(int(self.width()/1.1),int(self.height()/1.1))
         self.toggle_el(self.pref)
+        
+    def show_gpt(self):
+        self.gpt.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),(self.y()+int((self.height()-(self.height()/1.1))/2)),0,0)
+        self.gpt.setFixedSize(int(self.width()/1.1),int(self.height()/1.1))
+        self.toggle_el(self.gpt)
 
     def get_style(self):
         x=""
@@ -702,6 +781,26 @@ class MainWindow(QWidget):
         with open(f"{self.data['output_path']}/{self.data['output_name']}.mp3","wb") as f:
             f.write(b''.join(x))
             QMessageBox.information(self,"PyaiiTTS","TTS Success!")
+    
+    def generate_gpt(self):
+        key,prompt = self.gpt_key.text().strip(),self.gpt_prompt.toPlainText().strip()
+        LOG("Start GPT Gen...")
+        with OpenAI(api_key=key) as client:
+            chat_completion = client.chat.completions.create(
+                messages=[{
+                    "role":"user",
+                    "content":prompt
+                }],
+                model="gpt-4o-mini"
+            )
+        self.gpt_output.setText(chat_completion.choices[0].message.content)
+        LOG("Finish GPT Gen.")
+
+    def copy_output(self):
+        pyclip.copy(self.gpt_output.toPlainText().strip())
+
+    def set_from_output(self):
+        self.text_input.setText(self.gpt_output.toPlainText().strip())
 
     def save_p(self):
         try:
