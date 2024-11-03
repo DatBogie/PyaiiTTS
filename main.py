@@ -529,7 +529,7 @@ class MainWindow(QWidget):
         
         self.gpt_output = QTextEdit()
         self.gpt_output.setPlaceholderText("Outputted generation will appear here.")
-        self.gpt_output.setEnabled(False)
+        self.gpt_output.setReadOnly(True)
         
         gpt_set_output = QPushButton("Overwrite")
         gpt_copy_output = QPushButton("Copy")
@@ -811,7 +811,7 @@ class MainWindow(QWidget):
                     "role":"user",
                     "content":prompt
                 }],
-                model="gpt-4o-mini"
+                model=self.gpt_model.currentText().strip()
             )
         self.gpt_output.setText(chat_completion.choices[0].message.content)
         LOG("Finish GPT Gen.")
