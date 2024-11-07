@@ -8,5 +8,5 @@ Note that PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.j
 **Please don't download from the releases page directly. instead...**
 # [DOWNLOAD HERE](https://github.com/DatBogie/PyaiiTTS-Installer/releases/latest)
 
-<br>Screenshot:
+<br>Screenshot (Windows 11):
 <br><br>![](https://raw.githubusercontent.com/DatBogie/PyaiiTTS/refs/heads/main/.web-assets/pyaiitts.png)
