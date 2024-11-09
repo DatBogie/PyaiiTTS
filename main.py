@@ -255,9 +255,9 @@ class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
         super().__init__()
         self.QLabel = QLabel(text)
         self.QSlider = QSlider(Qt.Orientation.Horizontal)
-        if min and max:
+        if min != None and max != None:
             self.setRange(min,max)
-            self.QSlider.setRange(min,max*100)
+            self.QSlider.setRange(min,(max*100)+1)
         self.QHBoxLayout = QHBoxLayout()
         self.QHBoxLayout.addWidget(self,1)
         self.QHBoxLayout.addWidget(self.QSlider,10)
