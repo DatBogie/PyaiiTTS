@@ -1,8 +1,18 @@
-REM Install Dependancies
-pip3 install pyinstaller
-pip3 install PyQt6
-pip3 install elevenlabs
-pip3 install requests
+@echo off
 
-REM Build main.py
-pyinstaller --onefile --noconsole main.py
+REM Create venv
+python3 -m venv .\.venv
+
+REM Source venv
+call .\.venv\Scripts\activate
+
+REM Install dependancies
+pip install -r .\requirements.txt
+
+REM Build and copy assets
+pyinstaller --onefile --noconsole --name PyaiiTTS .\main.py
+xcopy /e /h /y /i .\assets .\dist\assets
+
+REM Finish
+echo "Press return to exit."
+pause

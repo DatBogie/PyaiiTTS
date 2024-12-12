@@ -10,7 +10,7 @@ source ./.venv/bin/activate
 pip3 install -r ./requirements.txt
 
 # Build and copy assets
-pyinstaller --onefile --name PyaiiTTS ./main.py && chmod +x ./dist/PyaiiTTS && cp -rf ./assets ./dist
+pyinstaller --onefile --noconsole --name PyaiiTTS ./main.py && rm ./dist/PyaiiTTS && cp -rf ./assets ./dist/PyaiiTTS.app/Contents/MacOS
 
 # Finish
 read -p "Press return to exit."

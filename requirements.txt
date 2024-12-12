@@ -1,0 +1,6 @@
+pyinstaller
+PyQt6
+elevenlabs
+requests
+openai
+pyclip

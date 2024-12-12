@@ -1,6 +1,6 @@
 import sys, json, os, requests, pyclip
-from PyQt6.QtGui import QColor, QTextOption
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox
+from PyQt6.QtGui import QColor, QTextOption, QIcon
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox, QStyleFactory
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent
 from functools import partial
 from elevenlabs.client import ElevenLabs
@@ -10,18 +10,20 @@ from openai import OpenAI
 
 __start__ = False
 
+DEFAULT_STYLE = "Fusion"
+
 root = "/"
 if sys.platform == "win32":
     root = "C:\\"
 if getattr(sys,"frozen",False):
-    pdir = os.path.dirname(sys.executable)+"/"
+    PDIR = os.path.dirname(sys.executable)+"/"
 else:
-    pdir = os.path.dirname(os.path.abspath(__file__))+"/"
+    PDIR = os.path.dirname(os.path.abspath(__file__))+"/"
     
 def LOG(e:Exception|str):
-    if not os.path.exists(pdir+"log.txt"):
-        with open(pdir+"log.txt","w") as f:pass
-    with open(pdir+"log.txt","a") as f:
+    if not os.path.exists(PDIR+"log.txt"):
+        with open(PDIR+"log.txt","w") as f:pass
+    with open(PDIR+"log.txt","a") as f:
         f.write("\n"+str(e))
 
 class RGB():
@@ -148,7 +150,7 @@ DEFAULT_CONF = {
     "output_path": root + ("\\" if sys.platform == "win32" else "/"),
     "voice_id": "",
     "text": "",
-    "output_name": "",
+    "output_name": "output",
     "voice_stability": 0.75,
     "voice_similarity": 0.75,
     "voice_model": ["eleven_monolingual_v1", "Eleven English v1"]
@@ -159,24 +161,24 @@ if os.path.exists("output"):
 
 DEFAULT_PREF = {
     "Theme": "Dark",
-    "NativeWidgets": False
+    "WidgetStyle": "Default"
 }
 
 
-if not os.path.exists(pdir+"voices.json"):
-    with open(pdir+"voices.json","w") as f:
+if not os.path.exists(PDIR+"voices.json"):
+    with open(PDIR+"voices.json","w") as f:
         json.dump(DEFAULT_VOICES,f)
         # f.write('{"John": "fTt87DbpNDYfGLhYRaCj", "Adam": "pNInz6obpgDQGcFmaJgB", "Wheatly": "wbkTEiY2duHYPGxRIrMb", "Heavy": "NXdARWuv0JFJUqSTb4RI"}')
-with open(pdir+"voices.json","r") as f:
+with open(PDIR+"voices.json","r") as f:
     try:
         VOICES = json.load(f)
     except Exception as e:
         LOG(e)
         VOICES = DEFAULT_VOICES
         try:
-            os.rename(pdir+"voices.json","voices (backup).json")
+            os.rename(PDIR+"voices.json","voices (backup).json")
         except Exception as e:LOG(e)
-        with open(pdir+"voices.json","w") as f:
+        with open(PDIR+"voices.json","w") as f:
             json.dump(DEFAULT_VOICES,f)
 
 
@@ -195,11 +197,11 @@ COLORS = {
 }
 
 
-if not os.path.exists(pdir+"themes.json"):
-    with open(pdir+"themes.json","w") as f:
+if not os.path.exists(PDIR+"themes.json"):
+    with open(PDIR+"themes.json","w") as f:
         json.dump(DEFAULT_THEMES,f)
 
-with open(pdir+"themes.json","r") as f:
+with open(PDIR+"themes.json","r") as f:
     try:
         _themes = json.load(f)
         if LEGACY_SYSTEM_THEME in list(_themes.keys()):
@@ -228,8 +230,8 @@ def s1(c:str):
     return "QPushButton, QComboBox, QDoubleSpinBox, QDoubleSpinBox::up-button, QDoubleSpinBox::down-button { padding: 2px; border-radius: 6px; "+f'border: 2px solid {COLORS[c].add(10*x).QColor().name()}; background-color: {COLORS[c].QColor().name()}; color: {z};'+" }" + """
 QPushButton:hover, QComboBox:hover, QDoubleSpinBox:hover, QDoubleSpinBox::up-button:hover, QDoubleSpinBox::down-button:hover { """+f'border: 2px solid {COLORS["Accent"].QColor().name()}; background-color: {COLORS[c].add(15).QColor().name()}'+" }" + """
 QPushButton:pressed, QComboBox:pressed, QDoubleSpinBox:pressed, QDoubleSpinBox::up-button:pressed, QDoubleSpinBox::down-button:pressed  { """+f'background-color: {COLORS[c].add(-10).QColor().name()};'+" }" + """
-QComboBox::drop-down { background: transparent; }""" + "QComboBox::down-arrow { "+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-image-{y}.png);'+" }" + """
-QDoubleSpinBox::up-arrow { """+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-up-{y}.png);'+" }" + "QDoubleSpinBox::down-arrow { "+f'width: 15%; height: 15%; image: url(assets/QComboBox-arrow-image-{y}.png);'+" }"
+QComboBox::drop-down { background: transparent; }""" + "QComboBox::down-arrow { "+f'width: 15%; height: 15%; image: url({PDIR}assets/QComboBox-arrow-image-{y}.png);'+" }" + """
+QDoubleSpinBox::up-arrow { """+f'width: 15%; height: 15%; image: url({PDIR}assets/QComboBox-arrow-up-{y}.png);'+" }" + "QDoubleSpinBox::down-arrow { "+f'width: 15%; height: 15%; image: url({PDIR}assets/QComboBox-arrow-image-{y}.png);'+" }"
 
 def s2(c:str):
     z="white"
@@ -300,11 +302,12 @@ class MainWindow(QWidget):
         super().__init__()
         
         self.ComboBoxes = []
+        self.IconButtons = []#QIcon(PDIR+"assets/save-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),
 
         if __start__ == False:
             __start__ = True
-            if os.path.exists(pdir+"key.txt"):
-                with open(pdir+"key.txt","r") as f:
+            if os.path.exists(PDIR+"key.txt"):
+                with open(PDIR+"key.txt","r") as f:
                     key = f.read().strip()
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
@@ -322,19 +325,19 @@ class MainWindow(QWidget):
                 req = requests.get("https://api.elevenlabs.io/v1/voices",headers={"xi-api-key": key})
                 if req.status_code == 200:
                     self.key = key
-                    with open(pdir+"key.txt","w") as f:
+                    with open(PDIR+"key.txt","w") as f:
                         f.write(key)
                 else:
                     LOG("User entered invalid API key.")
                     x = QMessageBox.critical(self,"PyaiiTTS | Get API Key","Invalid API key.\nPlease relaunch and try again.",QMessageBox.StandardButton.Ok)
                     self.close()
                     sys.exit()
-            if not os.path.exists(pdir+"conf.json"):
-                with open(pdir+"conf.json","w") as f:
+            if not os.path.exists(PDIR+"conf.json"):
+                with open(PDIR+"conf.json","w") as f:
                     json.dump(DEFAULT_CONF,f)
                     # f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
 
-            with open(pdir+"conf.json","r") as f:
+            with open(PDIR+"conf.json","r") as f:
                 try:
                     data = json.load(f)
                 except Exception as e:
@@ -342,10 +345,10 @@ class MainWindow(QWidget):
                     data = DEFAULT_CONF
             self.data = data
 
-            if not os.path.exists(pdir+"pref.json"):
-                with open(pdir+"pref.json","w") as f:
+            if not os.path.exists(PDIR+"pref.json"):
+                with open(PDIR+"pref.json","w") as f:
                     json.dump(DEFAULT_PREF,f)
-            with open(pdir+"pref.json","r") as f:
+            with open(PDIR+"pref.json","r") as f:
                 try:
                     prefer = json.load(f)
                 except Exception as e:
@@ -357,8 +360,18 @@ class MainWindow(QWidget):
                 api_key=self.key
             )
         
-        if ((not "NativeWidgets" in self.prefer) and (not DEFAULT_PREF["NativeWidgets"])) or (not self.prefer["NativeWidgets"]):
-            app.setStyle("fusion")
+        global DEFAULT_STYLE
+        DEFAULT_STYLE = app.style().name()
+        
+        if self.prefer["WidgetStyle"] and (self.prefer["WidgetStyle"] in QStyleFactory.keys() or self.prefer["WidgetStyle"] in ["Default","System"]):
+            style = prefer["WidgetStyle"] if not self.prefer["WidgetStyle"] in ["Default","System"] else (DEFAULT_STYLE if self.prefer["WidgetStyle"] == "System" else "Fusion")
+            app.setStyle(style)
+        else:
+            app.setStyle("Fusion")
+        # if ((not "NativeWidgets" in self.prefer) and (not DEFAULT_PREF["NativeWidgets"])) or (not self.prefer["NativeWidgets"]):
+        #     global DEFAULT_STYLE
+        #     DEFAULT_STYLE = app.style().name()
+        #     app.setStyle("fusion")
 
         self.setWindowTitle("PyaiiTTS")
         self.setMinimumSize(800,600)
@@ -370,10 +383,11 @@ class MainWindow(QWidget):
         input_label = QLabel("Text:")
 
         self.text_input = QTextEditWrap(self.data["text"])
-        self.text_input.setPlaceholderText("Enter the text to be spoken here...")
+        self.text_input.setPlaceholderText("Enter the text to be spoken here…")
         self.text_input.setToolTip("Put the text you want the AI voice to say here.\nLine breaks are not allowed.")
         
-        open_gpt = QPushButton("Generate Text...")
+        open_gpt = QPushButton(QIcon(PDIR+"assets/chat-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Generate Text…")
+        self.IconButtons.append({"icon_path":"assets/chat-","button":open_gpt})
 
         voice_label = QLabel("Voice:")
 
@@ -391,7 +405,7 @@ class MainWindow(QWidget):
         output_name_label = QLabel("Ouput Name:")
 
         self.output_input = QLineEdit(self.data["output_name"])
-        self.output_input.setPlaceholderText("Enter the name of the outputted file...")
+        self.output_input.setPlaceholderText("Enter the name of the outputted file…")
         self.output_input.editingFinished.connect(self.upd_file)
         self.output_input.setToolTip("Change the name of the outputted mp3. You don't need to append a file extensions.")
 
@@ -416,21 +430,26 @@ class MainWindow(QWidget):
         self.similarity.QLabel.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.similarity.anyValueChanged.connect(partial(self.set_voice_settings,1))
 
-        self.run_btn = QPushButton("Save and Generate")
+        self.run_btn = QPushButton(QIcon(PDIR+"assets/send-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save and Generate")
         self.run_btn.clicked.connect(self.generate)
         self.run_btn.setToolTip("Save all configurations before attempting to generate the mp3 of the AI voice.")
+        self.IconButtons.append({"icon_path":"assets/send-","button":self.run_btn})
 
-        self.save_btn = QPushButton("Save Configuration")
+        self.save_btn = QPushButton(QIcon(PDIR+"assets/save-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save Configuration")
         self.save_btn.clicked.connect(self.save)
         self.save_btn.setToolTip("Save all current options to conf.json.")
+        self.IconButtons.append({"icon_path":"assets/save-","button":self.save_btn})
 
-        self.save_p_btn = QPushButton("Save Preferences")
+        self.save_p_btn = QPushButton(QIcon(PDIR+"assets/save-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save Preferences")
         self.save_p_btn.clicked.connect(self.save_p)
         self.save_p_btn.setToolTip("Save all preferences to pref.json.")
+        self.IconButtons.append({"icon_path":"assets/save-","button":self.save_p_btn})
 
-        self.pref_btn = QPushButton("⚙")
+        self.pref_btn = QPushButton(icon=QIcon(PDIR+"assets/settings-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")))
         self.pref_btn.setMaximumWidth(25)
         self.pref_btn.setToolTip("Edit preferences.")
+        self.IconButtons.append({"icon_path":"assets/settings-","button":self.pref_btn})
+        
 
         # Preferences
 
@@ -469,24 +488,38 @@ class MainWindow(QWidget):
 
         pref_layout.addLayout(self.pref_layout)
 
-        self.pref_t_save = QPushButton("Save theme as...")
+        self.pref_t_save = QPushButton(QIcon(PDIR+"assets/save-as-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save theme as…")
         self.pref_t_save.clicked.connect(self.save_theme)
+        self.IconButtons.append({"icon_path":"assets/save-as-","button":self.pref_t_save})
 
-        self.pref_t_remove = QPushButton("Remove Theme...")
+        self.pref_t_remove = QPushButton(QIcon(PDIR+"assets/delete-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Remove Theme…")
         self.pref_t_remove.clicked.connect(self.remove_theme)
+        self.IconButtons.append({"icon_path":"assets/delete-","button":self.pref_t_remove})
         
-        self.pref_native = QCheckBox("Use Native Widget Style")
-        self.pref_native.setToolTip("Skip forcing the app to use the Fusion style.")
-        if self.prefer["NativeWidgets"]:
-            self.pref_native.setChecked(self.prefer["NativeWidgets"])
-        else:
-            self.pref_native.setChecked(DEFAULT_PREF["NativeWidgets"])
-        self.pref_native.checkStateChanged.connect(self.toggle_native)
+        # self.pref_native = QCheckBox("Use Native Widget Style*")
+        # self.pref_native.setToolTip("Skip forcing the app to use the Fusion style.\n*(Requires Restart)")
+        # if self.prefer["NativeWidgets"]:
+        #     self.pref_native.setChecked(self.prefer["NativeWidgets"])
+        # else:
+        #     self.pref_native.setChecked(DEFAULT_PREF["NativeWidgets"])
+        # self.pref_native.checkStateChanged.connect(self.toggle_native)
+        # if DEFAULT_STYLE == "fusion": self.pref_native.setDisabled(True)
+        
+        self.pref_widget_style = ComboBox(self)
+        styles = ["Default","System"]+QStyleFactory.keys()
+        self.pref_widget_style.addItems(styles)
+        self.pref_widget_style.setCurrentIndex(styles.index(self.prefer["WidgetStyle"]))
+        self.pref_widget_style.currentIndexChanged.connect(self.update_widget_style)
+        
+        pref_open_p_dir = QPushButton(QIcon(PDIR+"assets/open-folder-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Open Program Directory")
+        pref_open_p_dir.clicked.connect(self.open_prg_dir)
+        self.IconButtons.append({"icon_path":"assets/open-folder-","button":pref_open_p_dir})
 
-        self.pref_reset = QPushButton("⚠️ Reset Everything ⚠️")
+        self.pref_reset = QPushButton(QIcon(PDIR+"assets/warning-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Reset Everything")
         self.pref_reset.clicked.connect(self.reset)
+        self.IconButtons.append({"icon_path":"assets/warning-","button":self.pref_reset})
 
-        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_native,self.pref_reset])
+        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_widget_style,pref_open_p_dir,self.pref_reset])
 
         self.pref.setLayout(pref_layout)
 
@@ -502,21 +535,22 @@ class MainWindow(QWidget):
         
         oai_key = ""   
         try:
-            if not os.path.exists(pdir+"openai-key.txt"):
-                with open(pdir+"openai-key.txt","w") as f:f.write("")
-            with open(pdir+"openai-key.txt","r") as f:
+            if not os.path.exists(PDIR+"openai-key.txt"):
+                with open(PDIR+"openai-key.txt","w") as f:f.write("")
+            with open(PDIR+"openai-key.txt","r") as f:
                 oai_key = f.read().strip()
         except Exception as e:LOG(e)
         
         self.gpt_key = QLineEdit(oai_key)
-        self.gpt_key.setPlaceholderText("Enter OpenAI key here...")
+        self.gpt_key.setPlaceholderText("Enter OpenAI key here…")
         self.gpt_key.editingFinished.connect(self.save_gpt_key)
         
         self.gpt_prompt = QTextEdit()
-        self.gpt_prompt.setPlaceholderText("Enter GPT prompt text here...")
+        self.gpt_prompt.setPlaceholderText("Enter GPT prompt text here…")
         
-        gpt_gen = QPushButton("Generate")
+        gpt_gen = QPushButton(QIcon(PDIR+"assets/send-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Generate")
         gpt_gen.clicked.connect(self.generate_gpt)
+        self.IconButtons.append({"icon_path":"assets/send-","button":gpt_gen})
         
         self.gpt_model = ComboBox(self)
         try:
@@ -531,10 +565,12 @@ class MainWindow(QWidget):
         self.gpt_output.setPlaceholderText("Outputted generation will appear here.")
         self.gpt_output.setReadOnly(True)
         
-        gpt_set_output = QPushButton("Overwrite")
-        gpt_copy_output = QPushButton("Copy")
+        gpt_set_output = QPushButton(QIcon(PDIR+"assets/set-msg-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Overwrite")
+        gpt_copy_output = QPushButton(QIcon(PDIR+"assets/copy-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Copy")
         gpt_set_output.clicked.connect(self.set_from_output)
         gpt_copy_output.clicked.connect(self.copy_output)
+        self.IconButtons.append({"icon_path":"assets/set-msg-","button":gpt_set_output})
+        self.IconButtons.append({"icon_path":"assets/copy-","button":gpt_copy_output})
         
         gpt_btns_layout = QHBoxLayout()
         gpt_btns_layout.addWidget(gpt_set_output)
@@ -603,8 +639,25 @@ class MainWindow(QWidget):
                     gpt_models.append(x.id)
         return gpt_models
     
-    def toggle_native(self):
-        self.prefer["NativeWidgets"] = self.pref_native.isChecked()
+    def update_widget_style(self):
+        self.prefer["WidgetStyle"] = self.pref_widget_style.currentText()
+        if not self.prefer["WidgetStyle"] in ["Default","System"]:
+            app.setStyle(self.prefer["WidgetStyle"])
+        else:
+            app.setStyle(DEFAULT_STYLE if self.prefer["WidgetStyle"] == "System" else "Fusion")
+    
+    # def toggle_native(self):
+    #     self.prefer["NativeWidgets"] = self.pref_native.isChecked()
+    #     if self.prefer["NativeWidgets"]:
+    #         app.setStyle(DEFAULT_STYLE)
+    #     else:
+    #         app.setStyle("fusion")
+        # if (app.style().name() == "fusion" and not self.prefer["NativeWidgets"]) or (app.style().name() != "fusion" and self.prefer["NativeWidgets"]): return
+        # x = QMessageBox.question(self,"PyaiiTTS | Apply Preferences","PyaiiTTS requires a restart to apply certain preferences.\nClose PyaiiTTS now?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+        # if x == QMessageBox.StandardButton.Yes:
+        #     if QMessageBox.question(self,"PyaiiTTS | Apply Preferences","Save configuration?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes: self.save()
+        #     if QMessageBox.question(self,"PyaiiTTS | Apply Preferences","Save preferences?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No) == QMessageBox.StandardButton.Yes: self.save_p()
+        #     sys.exit()
     
     def set_voice_settings(self,x:int):
         if x == 0:
@@ -615,8 +668,16 @@ class MainWindow(QWidget):
     def change_model(self):
         self.data["voice_model"] = self.MODELS[self.model.currentIndex()]
     
+    def open_prg_dir(self):
+        if sys.platform == "win32":
+            os.startfile(PDIR)
+        elif sys.platform == "darwin":
+            os.system(f"open {PDIR}")
+        else:
+            os.system(f"xdg-open {PDIR}")
+    
     def reset(self):
-        x = QMessageBox.warning(self,"PyaiiTTS | Reset All","Are you sure you want to reset EVEYRTHING?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
+        x = QMessageBox.warning(self,"PyaiiTTS | Reset All","Are you sure you want to reset EVERYTHING?\nNote: your API key(s) will not be reset.",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
         if x != QMessageBox.StandardButton.Yes: return
         code = int(f"{randrange(0,10)}{randrange(0,10)}{randrange(0,10)}")
         y, s = QInputDialog.getInt(self,"PyaiiTTS | Reset All",f"Enter {code} to confirm.")
@@ -628,15 +689,15 @@ class MainWindow(QWidget):
             "voices.json"
         ]
         for v in to_remove:
-            if os.path.exists(pdir+v):
-                os.remove(pdir+v)
+            if os.path.exists(PDIR+v):
+                os.remove(PDIR+v)
         z = QMessageBox.question(self,"PyaiiTTS","Quit PyaiiTTs now?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
         if z != QMessageBox.StandardButton.Yes: return
         self.close()
         sys.exit()
 
     def save_gpt_key(self):
-        with open(pdir+"openai-key.txt","w") as f:
+        with open(PDIR+"openai-key.txt","w") as f:
             f.write(self.gpt_key.text().strip())
         if self.gpt_model.count() < 1:
             self.gpt_model.clear()
@@ -648,7 +709,7 @@ class MainWindow(QWidget):
             for y, x in v.items():
                 _themes[k][y] = x.get()
         try:
-            with open(pdir+"themes.json","w") as f:
+            with open(PDIR+"themes.json","w") as f:
                 json.dump(_themes,f)
         except Exception as e:
             return e
@@ -678,7 +739,9 @@ class MainWindow(QWidget):
 
     def save_theme(self):
         name, s = QInputDialog.getText(self,"PyaiiTTS | Save Theme","Save Theme as:")
-        if not s or name in PROTECTED_THEMES: return
+        if not s or name in PROTECTED_THEMES:
+            QMessageBox.critical(self,"PyaiiTTS | Save Theme",f"Failed to save theme: invalid name '{name}'.",QMessageBox.StandardButton.Close)
+            return
         if name in list(THEMES.keys()):
             x = QMessageBox.warning(self,"PyaiiTTS | Save Theme",f"Overwrite existing theme '{name}'?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
             if x != QMessageBox.StandardButton.Yes: return
@@ -758,6 +821,9 @@ class MainWindow(QWidget):
                 x.view().parentWidget().setStyleSheet(f'background-color: {COLORS["Background"].QColor().name()}')
             else:
                 x.view().parentWidget().setStyleSheet("")
+        for x in self.IconButtons:
+            if self.prefer["Theme"] != SYSTEM_THEME:
+                x["button"].setIcon(QIcon(PDIR+x["icon_path"]+("light" if COLORS["Button"].lightness() >= 128 else "dark")))
             
 
     def change_c(self,c:str):
@@ -789,7 +855,7 @@ class MainWindow(QWidget):
         self.text_input.setPlainText(self.data["text"])
 
     def choose_dir(self):
-        dia = QFileDialog.getExistingDirectory(self,"Choose output directory...",self.data["output_path"])
+        dia = QFileDialog.getExistingDirectory(self,"Choose output directory…",self.data["output_path"])
         if dia:
             self.data["output_path"] = dia
             self.output.setText(f'Choose Output Location ({self.data["output_path"]})')
@@ -804,7 +870,7 @@ class MainWindow(QWidget):
     
     def generate_gpt(self):
         key,prompt = self.gpt_key.text().strip(),self.gpt_prompt.toPlainText().strip()
-        LOG("Start GPT Gen...")
+        LOG("Start GPT Gen…")
         with OpenAI(api_key=key) as client:
             chat_completion = client.chat.completions.create(
                 messages=[{
@@ -826,7 +892,7 @@ class MainWindow(QWidget):
         try:
             # self.setWindowTitle("PyaiiTTS")
             # prefer = {"Theme": self.prefer["Theme"]}
-            with open(pdir+"pref.json","w") as f:
+            with open(PDIR+"pref.json","w") as f:
                 json.dump(self.prefer,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Preferences",QMessageBox.StandardButton.Ok)
         except Exception as e:
@@ -839,7 +905,7 @@ class MainWindow(QWidget):
             self.change_voice()
             # self.setWindowTitle("PyaiiTTS")
             # data = {"output_path": self.data["output_path"], "voice_id": self.data["voice_id"], "text": self.data["text"], "output_name": self.data["output_name"]}
-            with open(pdir+"conf.json","w") as f:
+            with open(PDIR+"conf.json","w") as f:
                 json.dump(self.data,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Configurations",QMessageBox.StandardButton.Ok)
         except Exception as e:
