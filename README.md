@@ -1,53 +1,59 @@
-### PyaiiTTS
+# PyaiiTTS
 **Py**<sub>thon</sub>**a**<sub>rtificial</sub>**i**<sub>ntelligence</sub>**i**<sub>nterface</sub>**T**<sub>ext</sub>**T**<sub>o</sub>**S**<sub>peech</sub><br>_<sub>100% didn't accidentally spell it with an extra i on accident or anything</sub>_<br>
 A simple python program that generates an mp3 of an AI voice using [elevenlabs](https://elevenlabs.io).
 
-> [!Note]
-All versions of PyaiiTTS support Linux and Windows.
-**MacOS is only supported for ≥v1.3**
-If you want to use an older version on MacOS, please [build from an older version](#build-version-from-zip-archive).
-
 > [!Important]
-**Please don't download from the releases page directly. _Instead..._**
+All versions of PyaiiTTS support Linux and Windows.<br>
+**MacOS is only supported for ≥v1.3**<br>
+If you want to use an older version on MacOS, please [build from an older version](#build-version-from-zip-archive).<br>
+*Otherwise,* **please don't download from the releases page directly. _Instead..._**
 ### [DOWNLOAD HERE](https://github.com/DatBogie/PyaiiTTS-Installer/releases/latest)
 
 *Or...*
 
 > [!Important]
-The following installation methods require Python to be installed.
-    • On Linux, it should already be installed.
-    • On Windows, the easiest way is to do so is to simply install it from the Microsoft Store.
-    • On MacOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).
-    **Make sure to add Python to PATH as well!**
+The following installation methods require Python to be installed.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;• On Linux, it should already be installed.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;• On Windows, the easiest way is to do so is to simply install it from the Microsoft Store.<br>
+&nbsp;&nbsp;&nbsp;&nbsp;• On MacOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).<br>
+**Make sure to add Python to PATH as well!**
 
-### Build from Source
+## Build from Source
 > [!Note]
-    Make sure Git is installed.
-    • Windows: [download here](https://gitforwindows.org)
-    • Linux:
-    &nbsp;&nbsp;&nbsp;&nbsp;Install from your package manager in a terminal if it isn't already, eg.:
-    &nbsp;&nbsp;&nbsp;&nbsp;◦ `#`​```apt install git # Debian```
-    &nbsp;&nbsp;&nbsp;&nbsp;◦ `#`​```pacman -S git # Arch```
-    • MacOS: `$`​```git --version```
+    Make sure Git is installed.<br>
+    • Windows: [download here](https://gitforwindows.org)<br>
+    • Linux:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;Install from your package manager in a terminal if it isn't already, eg.:<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;◦ ```sudo apt install git``` (Debian)<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;◦ ​```sudo pacman -S git``` (Arch)<br>
+    • MacOS: ```git --version```
 
 1. Clone this repo.
     Run the following in a terminal emulator or PowerShell:
-    ```git clone https://github.com/DatBogie/PyaiiTTS && cd PyaiiTTS```
-2. Run the build file for your OS.
+    ```sh
+   git clone https://github.com/DatBogie/PyaiiTTS && cd PyaiiTTS
+    ```
+3. Run the build file for your OS.
     This will create a venv and install all needed Python modules before building an executable.
     You will find the executable in `./dist/` (`.\dist\` on Windows)
     - **Linux:**
-    `$`​```./build-linux.sh```
+    ```sh
+    ./build-linux.sh
+    ```
     - **Windows:**
-    ```.\build-windows.bat```
+    ```sh
+    .\build-windows.bat
+    ```
     - **MacOS:**
-    `$`​```./build-mac.sh```
+    ```sh
+    ./build-mac.sh
+    ```
 
 *Or or...*
 
-### Build Version from ZIP Archive
+## Build Version from ZIP Archive
 > [!Note]
-This can be useful for using older versions on a Mac. For other versions.
+This can be useful for using older versions on a Mac. For other versions.<br>
 For other OSes, please just use [PyaiiTTS-Installer](https://github.com/DatBogie/PyaiiTTS-Installer/releases).
 
 &nbsp;
@@ -57,7 +63,7 @@ For other OSes, please just use [PyaiiTTS-Installer](https://github.com/DatBogie
     - **Linux:** [build-linux.sh](build-linux.sh)
     - **Windows:** [build-windows.bat](build-windows.bat)
     - **MacOS:** [build-mac.sh](build-mac.sh)
-4. Run the build file. An executable file should be created in the `dist` folder.
+4. Run the build file. An executable file should appear in the `dist` folder.
 
 &nbsp;
 > [!Note]
