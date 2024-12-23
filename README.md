@@ -93,7 +93,7 @@ This isn't very useful anymore. Please just use [the installer](https://github.c
 PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, and `voices.json` in the directory that the executable is placed in!
 
 &nbsp;
-### Screenshots:
+## Screenshots:
 <sup>_(Hover an image for a caption.)_</sup>
 
 <span title="PyaiiTTS v1.3 (release) running on macOS Ventura.">![PyaiiTTS v1.3 on macOS w/ default widgets/theme](./.web-assets/macOS.png)</span>
