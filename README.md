@@ -4,8 +4,10 @@ A simple python program that generates an mp3 of an AI voice using [elevenlabs](
 
 > [!Important]
 All versions of PyaiiTTS support Linux and Windows.<br>
-**MacOS is only supported for ≥v1.3**<br>
-If you want to use an older version on MacOS, please [build from an older version](#build-version-from-zip-archive).<br>
+**macOS is only supported for ≥v1.3 (release)**<br>
+~~If you want to use an older version on macOS, please [build from an older version](#build-version-from-zip-archive).~~<br>
+You may now install older versions from the [installer](https://github.com/datbogie/pyaiitts-installer/releases/latest) too.<br>
+_If on macOS_, you can download versions >=v1.3-pre3 from the respective release page, as (on macOS only) the binary contains the assets folder.<br>
 *Otherwise,* **please don't download from the releases page directly. _Instead..._**
 ### [DOWNLOAD HERE](https://github.com/DatBogie/PyaiiTTS-Installer/releases/latest)
 
@@ -15,7 +17,7 @@ If you want to use an older version on MacOS, please [build from an older versio
 The following installation methods require Python to be installed.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;• On Linux, it should already be installed.<br>
 &nbsp;&nbsp;&nbsp;&nbsp;• On Windows, the easiest way is to do so is to simply install it from the Microsoft Store.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;• On MacOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).<br>
+&nbsp;&nbsp;&nbsp;&nbsp;• On macOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).<br>
 **Make sure to add Python to PATH as well!**
 
 ## Build from Source
@@ -26,7 +28,7 @@ The following installation methods require Python to be installed.<br>
     &nbsp;&nbsp;&nbsp;&nbsp;Install from your package manager in a terminal if it isn't already, eg.:<br>
     &nbsp;&nbsp;&nbsp;&nbsp;◦ ```sudo apt install git``` (Debian)<br>
     &nbsp;&nbsp;&nbsp;&nbsp;◦ ​```sudo pacman -S git``` (Arch)<br>
-    • MacOS: ```git --version```
+    • macOS: ```git --version```
 
 1. Clone this repo.
     Run the following in a terminal emulator or PowerShell:
@@ -44,7 +46,7 @@ The following installation methods require Python to be installed.<br>
     ```sh
     .\build-windows.bat
     ```
-    - **MacOS:**
+    - **macOS:**
     ```sh
     ./build-mac.sh
     ```
@@ -53,8 +55,7 @@ The following installation methods require Python to be installed.<br>
 
 ## Build Version from ZIP Archive
 > [!Note]
-This can be useful for using older versions on a Mac. For other versions.<br>
-For other OSes, please just use [PyaiiTTS-Installer](https://github.com/DatBogie/PyaiiTTS-Installer/releases).
+This isn't very usefull anymore. Please just use [PyaiiTTS-Installer](https://github.com/DatBogie/PyaiiTTS-Installer/releases).
 
 &nbsp;
 1. Download the ZIP archive of the version you would like (you can find those [here](https://github.com/DatBogie/PyaiiTTS/releases)) and extract its contents into a folder.
@@ -70,5 +71,5 @@ For other OSes, please just use [PyaiiTTS-Installer](https://github.com/DatBogie
 PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, and `voices.json` in the directory that the executable is placed in!
 
 &nbsp;
-### Screenshot (Windows 11):
+### Screenshot (Windows 11, older version):
 ![](https://raw.githubusercontent.com/DatBogie/PyaiiTTS/refs/heads/main/.web-assets/pyaiitts.png)
