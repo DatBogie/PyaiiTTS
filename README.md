@@ -72,5 +72,6 @@ PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, and 
 
 &nbsp;
 ### Screenshots:
+<sup>_(Hover for a caption.)_</sup>
 
 <span title="PyaiiTTS v1.3 (release) running on macOS Ventura.">![PyaiiTTS v1.3 on macOS w/ default widgets/theme](./.web-assets/macOS.png)</span>
