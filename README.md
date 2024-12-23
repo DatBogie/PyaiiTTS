@@ -3,6 +3,23 @@
 A simple python program that generates an mp3 of an AI voice using [ElevenLabs](https://elevenlabs.io).
 
 > [!Important]
+> On Linux, you need to install a CLI clipboard interface for `pyclip` to use (if one isn't already).
+> - X11:
+>     - ```
+>       sudo pacman -Sy xclip # Arch
+>       ```
+>     - ```
+>       sudo apt update && sudo apt install xclip # Debian-based
+>       ```
+> - Wayland:
+>     - ```
+>       sudo pacman -Sy wl-clipboard # Arch
+>       ```
+>     - ```
+>       sudo apt update && sudo apt install wl-clipboard # Debian-based
+>       ```
+
+> [!Tip]
 All versions of PyaiiTTS support Linux and Windows.<br>
 **macOS is only supported for ≥v1.3 (release)**<br>
 ~~If you want to use an older version on macOS, please [build from an older version](#build-version-from-zip-archive).~~<br>
@@ -14,21 +31,27 @@ _If on macOS_, you can download versions >=v1.3-pre3 from the respective release
 *Or...*
 
 > [!Important]
-The following installation methods require Python to be installed.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;• On Linux, it should already be installed.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;• On Windows, the easiest way is to do so is to simply install it from the Microsoft Store.<br>
-&nbsp;&nbsp;&nbsp;&nbsp;• On macOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).<br>
-**Make sure to add Python to PATH as well!**
+> The following installation methods require Python to be installed.<br>
+> - On Linux, it should already be installed.<br>
+> - On Windows, the easiest way is to do so is to simply install it from the Microsoft Store.<br>
+> - On macOS, it should already be installed. If you encounter problems, try installing the latest version [here](https://www.python.org/downloads/).<br>
+> **Make sure to add Python to PATH as well!**
 
 ## Build from Source
-> [!Note]
-    Make sure Git is installed.<br>
-    • Windows: [download here](https://gitforwindows.org)<br>
-    • Linux:<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;Install from your package manager in a terminal if it isn't already, eg.:<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;◦ ```sudo apt install git``` (Debian)<br>
-    &nbsp;&nbsp;&nbsp;&nbsp;◦ ​```sudo pacman -S git``` (Arch)<br>
-    • macOS: ```git --version```
+> [!Important]
+> Make sure Git is installed.<br>
+> - Windows: [download here](https://gitforwindows.org).
+> - Linux:
+>     - ```
+>       sudo pacman -Sy git # Arch
+>       ```
+>     - ```
+>       sudo apt update && sudo apt install git # Debian-based
+>       ```
+> - macOS:
+>   ```
+>   git --version
+>   ```
 
 1. Clone this repo.
     Run the following in a terminal emulator or PowerShell:
@@ -54,10 +77,9 @@ The following installation methods require Python to be installed.<br>
 *Or or...*
 
 ## Build Version from ZIP Archive
-> [!Note]
-This isn't very usefull anymore. Please just use [PyaiiTTS-Installer](https://github.com/DatBogie/PyaiiTTS-Installer/releases).
+> [!Tip]
+This isn't very useful anymore. Please just use [the installer](https://github.com/DatBogie/PyaiiTTS-Installer/releases).
 
-&nbsp;
 1. Download the ZIP archive of the version you would like (you can find those [here](https://github.com/DatBogie/PyaiiTTS/releases)) and extract its contents into a folder.
 2. Download the `requirements.txt` file from this repo [here](requirements.txt) and put it in the folder your extracted into above.
 3. Download the build script for your OS from this repo and place it in the aformentioned folder.
