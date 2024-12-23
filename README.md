@@ -1,4 +1,4 @@
-# PyaiiTTS
+# PyaiiTTS <img src="./.web-assets/PyaiiTTS-Logo.png" height="25px">
 **Py**<sub>thon</sub>**a**<sub>rtificial</sub>**i**<sub>ntelligence</sub>**i**<sub>nterface</sub>**T**<sub>ext</sub>**T**<sub>o</sub>**S**<sub>peech</sub><br>_<sub>100% didn't accidentally spell it with an extra i on accident or anything</sub>_<br>
 A simple python program that generates an mp3 of an AI voice using [ElevenLabs](https://elevenlabs.io).
 
