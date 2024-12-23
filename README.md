@@ -71,5 +71,6 @@ This isn't very usefull anymore. Please just use [PyaiiTTS-Installer](https://gi
 PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, and `voices.json` in the directory that the executable is placed in!
 
 &nbsp;
-### Screenshot (Windows 11, older version):
-![](https://raw.githubusercontent.com/DatBogie/PyaiiTTS/refs/heads/main/.web-assets/pyaiitts.png)
+### Screenshots:
+
+<span title="PyaiiTTS v1.3 (release) running on macOS Ventura.">![PyaiiTTS v1.3 on macOS w/ default widgets/theme](./.web-assets/macOS.png)</span>
