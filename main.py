@@ -1,6 +1,6 @@
 import sys, json, os, requests, pyclip
-from PyQt6.QtGui import QColor, QTextOption, QIcon
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox, QStyleFactory
+from PyQt6.QtGui import QColor, QTextOption, QIcon, QPixmap
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox, QStyleFactory, QErrorMessage
 from PyQt6.QtCore import Qt, pyqtSignal, QEvent
 from functools import partial
 from elevenlabs.client import ElevenLabs
@@ -147,7 +147,7 @@ DEFAULT_THEMES = {
 }
 
 DEFAULT_CONF = {
-    "output_path": root + ("\\" if sys.platform == "win32" else "/"),
+    "output_path": PDIR[:-1],#root + ("\\" if sys.platform == "win32" else "/"),
     "voice_id": "",
     "text": "",
     "output_name": "output",
@@ -289,12 +289,12 @@ class QDoubleSpinBoxLabelSlider(QDoubleSpinBox):
 class QTextEditWrap(QTextEdit):
     def __init__(self,text:str=None):
         super().__init__(text)
-        self.installEventFilter(self)
-    def eventFilter(self,source,event):
-        if source == self and event.type() == QEvent.Type.KeyPress:
-            if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
-                return True
-        return super().eventFilter(source, event)
+    #     self.installEventFilter(self)
+    # def eventFilter(self,source,event):
+    #     if source == self and event.type() == QEvent.Type.KeyPress:
+    #         if event.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
+    #             return True
+    #     return super().eventFilter(source, event)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -382,7 +382,8 @@ class MainWindow(QWidget):
 
         input_label = QLabel("Text:")
 
-        self.text_input = QTextEditWrap(self.data["text"])
+        self.text_input = QTextEditWrap()
+        self.text_input.setPlainText(self.data["text"].encode('utf-8').decode('unicode_escape'))
         self.text_input.setPlaceholderText("Enter the text to be spoken here…")
         self.text_input.setToolTip("Put the text you want the AI voice to say here.\nLine breaks are not allowed.")
         
@@ -402,11 +403,21 @@ class MainWindow(QWidget):
         self.voice.setToolTip("Choose which voice you want the AI to speak in.\nMore voices can be added by editing the voices.json file.")
         self.voice.activated.connect(self.change_voice)
 
-        output_name_label = QLabel("Ouput Name:")
+        self.output_name_label = QLabel("Output Name:")
+        self.output_name_icon = QLabel()
+        pm=QPixmap(f"{PDIR}assets/warning-{("light" if COLORS["Button"].lightness() >= 128 else "dark")}.png")
+        self.output_name_icon.setPixmap(pm.scaledToWidth(16))
+        self.output_name_icon.setFixedSize(16,16)
+        self.output_name_icon.setToolTip(f"WARNING: File {self.data["output_path"]}/{self.data["output_name"]}.mp3 already exists!\nGenerating will overwrite this file.")
+        output_name_label_layout = QHBoxLayout()
+        output_name_label_layout.addWidget(self.output_name_icon)
+        output_name_label_layout.addWidget(self.output_name_label)
+        self.output_name_icon.setVisible(False)
+        
 
         self.output_input = QLineEdit(self.data["output_name"])
         self.output_input.setPlaceholderText("Enter the name of the outputted file…")
-        self.output_input.editingFinished.connect(self.upd_file)
+        self.output_input.textChanged.connect(self.upd_file)
         self.output_input.setToolTip("Change the name of the outputted mp3. You don't need to append a file extensions.")
 
         output_label = QLabel("Output:")
@@ -467,9 +478,9 @@ class MainWindow(QWidget):
         self.pref_tl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pref_t = ComboBox(self)
-        self.pref_t.setEditable(True)
-        self.pref_t.lineEdit().setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.pref_t.lineEdit().setReadOnly(True)
+        # self.pref_t.setEditable(True)
+        # self.pref_t.lineEdit().setAlignment(Qt.AlignmentFlag.AlignCenter)
+        # self.pref_t.lineEdit().setReadOnly(True)
 
         self.pref_t.activated.connect(partial(self.apply_current_theme,self.pref_t))
 
@@ -596,7 +607,9 @@ class MainWindow(QWidget):
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignmentFlag.AlignTop)
-        self.addWidgets(layout,[l,input_label,self.text_input,open_gpt,voice_label,self.voice,output_name_label,self.output_input,output_label,self.output,model_label,self.model])
+        self.addWidgets(layout,[l,input_label,self.text_input,open_gpt,voice_label,self.voice])
+        layout.addLayout(output_name_label_layout)
+        self.addWidgets(layout,[self.output_input,output_label,self.output,model_label,self.model])
         layout.addLayout(self.stability.QLayout)
         layout.addLayout(self.similarity.QLayout)
         layout.addLayout(btns_layout)
@@ -748,7 +761,7 @@ class MainWindow(QWidget):
         THEMES[name] = COLORS
         self.apply_theme(name)
         e = self.dump_THEMES()
-        if e: QMessageBox.critical(self,"PyaiiTTS | Save Theme",str(e)); return
+        if e: QErrorMessage(self).showMessage(str(e)); return
         self.pref_t.addItem(name)
         self.pref_t.setCurrentIndex(
             list(THEMES.keys()).index(self.prefer["Theme"])
@@ -848,11 +861,18 @@ class MainWindow(QWidget):
 
     def upd_file(self):
         self.data["output_name"] = self.output_input.text()
+        file_path = f"{self.data["output_path"]}/{self.data["output_name"]}.mp3"
+        if os.path.exists(self.data["output_path"]+"/"+self.data["output_name"]+".mp3"):
+            self.output_name_icon.setToolTip(f"WARNING: File {file_path} already exists!\nGenerating will overwrite this file.")
+            self.output_name_icon.setVisible(True)
+        else:
+            self.output_name_icon.setVisible(False)
 
     def upd_text(self):
         escapes = ''.join([chr(char) for char in range(1, 32)])
-        self.data["text"] = self.text_input.toPlainText().strip().translate(str.maketrans('','',escapes))
-        self.text_input.setPlainText(self.data["text"])
+        self.data["text"] = self.text_input.toPlainText().encode('unicode_escape').decode('utf-8')
+        self.data["text"] = self.data["text"].translate(str.maketrans('','',escapes))
+        self.text_input.setPlainText(self.data["text"].encode('utf-8').decode('unicode_escape'))
 
     def choose_dir(self):
         dia = QFileDialog.getExistingDirectory(self,"Choose output directory…",self.data["output_path"])
@@ -886,7 +906,7 @@ class MainWindow(QWidget):
         pyclip.copy(self.gpt_output.toPlainText().strip())
 
     def set_from_output(self):
-        self.text_input.setText(self.gpt_output.toPlainText().strip())
+        self.text_input.setPlainText(self.gpt_output.toPlainText().strip())
 
     def save_p(self):
         try:
@@ -896,7 +916,8 @@ class MainWindow(QWidget):
                 json.dump(self.prefer,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Preferences",QMessageBox.StandardButton.Ok)
         except Exception as e:
-            QMessageBox.critical(self,str(e),QMessageBox.StandardButton.Close)
+            QErrorMessage(self).showMessage(str(e))
+            # QMessageBox.critical(self,"PyaiiTTS",str(e),QMessageBox.StandardButton.Close)
 
     def save(self):
         try:
@@ -909,7 +930,8 @@ class MainWindow(QWidget):
                 json.dump(self.data,f)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Configurations",QMessageBox.StandardButton.Ok)
         except Exception as e:
-            QMessageBox.critical(self,str(e),QMessageBox.StandardButton.Close)
+            QErrorMessage(self).showMessage(str(e))
+            # QMessageBox.critical(self,str(e),QMessageBox.StandardButton.Close)
 
 class ComboBox(QComboBox):
     def __init__(self,app:MainWindow):
