@@ -15,5 +15,11 @@
     "Text Input": [35, 0, 1],
     "Background": [25, 0, 0],
     "Accent": [175, 0, 3]
+  },
+  "Crocus Purple": {
+    "Button": [66, 50, 104],
+    "Text Input": [80, 60, 125],
+    "Background": [36, 27, 57],
+    "Accent": [146, 110, 228]
   }
 }
