@@ -96,4 +96,5 @@ PyaiiTTS will create files such as `conf.json`, `pref.json`, `themes.json`, and 
 ## Screenshots:
 <sup>_(Hover an image for a caption.)_</sup>
 
-<span title="PyaiiTTS v1.3 (release) running on macOS Ventura.">![PyaiiTTS v1.3 on macOS w/ default widgets/theme](./.web-assets/macOS.png)</span>
+<span title="PyaiiTTS v1.3 (release) running on macOS Ventura.\nmacOS widgets and system theme are in use.">![PyaiiTTS v1.3 on macOS w/ default widgets/theme](./.web-assets/macOS.png)</span>
+<span title="PyaiiTTS v1.3 (release) running on Linux with KDE Plasma 6.2. Fusion widgets and custom 'Crocus Purple' theme are in use.">![PyaiiTTS v1.3 on Linux w/ default widgets & custom theme](./.web-assets/Linux.png)</span>
