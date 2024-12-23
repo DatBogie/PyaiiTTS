@@ -3,7 +3,7 @@
 A simple python program that generates an mp3 of an AI voice using [ElevenLabs](https://elevenlabs.io).
 
 > [!Important]
-> On Linux, you need to install a CLI clipboard interface for `pyclip` to use (if one isn't already).
+> On Linux, you need to install a CLI clipboard interface (`xclip` or `wl-clipboard`) for `pyclip` to use (if one isn't already).
 > - X11:
 >     - ```
 >       sudo pacman -Sy xclip # Arch
