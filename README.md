@@ -20,12 +20,14 @@ A simple python program that generates an mp3 of an AI voice using [ElevenLabs](
 >       ```
 
 > [!Tip]
-All versions of PyaiiTTS support Linux and Windows.<br>
-**macOS is only supported for ≥v1.3 (release)**<br>
-~~If you want to use an older version on macOS, please [build from an older version](#build-version-from-zip-archive).~~<br>
-You may now install older versions from the [installer](https://github.com/datbogie/pyaiitts-installer/releases/latest) too.<br>
-_If on macOS_, you can download versions >=v1.3-pre3 from the respective release page, as (on macOS only) the binary contains the assets folder.<br>
-*Otherwise,* **please don't download from the releases page directly. _Instead..._**
+> All versions of PyaiiTTS support Linux and Windows.<br>
+> **macOS is only supported for ≥v1.3 (release)**<br>
+> ~~If you want to use an older version on macOS, please [build from an older version](#build-version-from-zip-archive).~~<br>
+> You may now install older versions from the [installer](https://github.com/datbogie/pyaiitts-installer/releases/latest) too.<br>
+> _If on macOS_, you can download versions directly from the respective release page, as (on macOS only) the binary contains the assets folder.<br>
+> Note that (especially on macOS), running older (<=v1.3-pre2) versions through shortcuts/links (or the `.app` binary) **will not work**; PyaiiTTS won't be able to load any `.json` files or assets, as it was looking in the wrong directory prior to the fix implemented first in v1.3-pre3.<br>
+> *Otherwise,* **please don't download from the releases page directly. _Instead..._**
+
 ### [DOWNLOAD HERE](https://github.com/DatBogie/PyaiiTTS-Installer/releases/latest)
 
 *Or...*
