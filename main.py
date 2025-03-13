@@ -14,7 +14,7 @@ DEFAULT_STYLE = "Fusion"
 
 root = "/"
 if sys.platform == "win32":
-    root = "C:\\"
+    root = "C:/"
 if getattr(sys,"frozen",False):
     PDIR = os.path.dirname(sys.executable)+"/"
 else:
@@ -147,7 +147,7 @@ DEFAULT_THEMES = {
 }
 
 DEFAULT_CONF = {
-    "output_path": PDIR[:-1],#root + ("\\" if sys.platform == "win32" else "/"),
+    "output_path": PDIR[:-1],
     "voice_id": "",
     "text": "",
     "output_name": "output",
@@ -156,8 +156,8 @@ DEFAULT_CONF = {
     "voice_model": ["eleven_monolingual_v1", "Eleven English v1"]
 }
 
-if os.path.exists("output"):
-    DEFAULT_CONF["output_path"] = os.path.abspath("output")
+if os.path.exists(PDIR+"output"):
+    DEFAULT_CONF["output_path"] = PDIR+"output"
 
 DEFAULT_PREF = {
     "Theme": "Dark",
@@ -335,7 +335,6 @@ class MainWindow(QWidget):
             if not os.path.exists(PDIR+"conf.json"):
                 with open(PDIR+"conf.json","w") as f:
                     json.dump(DEFAULT_CONF,f)
-                    # f.write('{\n\t"output_path": "'+root+ ("\\" if sys.platform == "win32" else "") +'",\n\t"voice_id": "",\n\t"text": "",\n\t"output_name": "output"\n}')
 
             with open(PDIR+"conf.json","r") as f:
                 try:
