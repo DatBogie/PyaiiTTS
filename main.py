@@ -685,12 +685,17 @@ class MainWindow(QWidget):
         self.model.setCurrentIndex(self.MODELS.index(self.data["voice_model"]))
 
     def gpt_get_models(self,oai_key:str):
-        gpt_models = []
-        with OpenAI(api_key=oai_key) as client:
-            for x in client.models.list().data:
-                if x.id.startswith("gpt-"):
-                    gpt_models.append(x.id)
-        return gpt_models
+        try:
+            gpt_models = []
+            with OpenAI(api_key=oai_key) as client:
+                for x in client.models.list().data:
+                    if x.id.startswith("gpt-"):
+                        gpt_models.append(x.id)
+            return gpt_models
+        except Exception as e:
+            LOG("OpenAI Contact Failed: "+str(e))
+            QErrorMessage(self).showMessage("OpenAI: "+str(e))
+            return []
     
     def update_widget_style(self):
         self.prefer["WidgetStyle"] = self.pref_widget_style.currentText()
@@ -752,9 +757,9 @@ class MainWindow(QWidget):
     def save_gpt_key(self):
         with open(PDIR+"openai-key.txt","w") as f:
             f.write(self.gpt_key.text().strip())
-        if self.gpt_model.count() < 1:
-            self.gpt_model.clear()
-            self.gpt_model.addItems(self.gpt_get_models(self.gpt_key.text().strip()))
+        # if self.gpt_model.count() < 1:
+        self.gpt_model.clear()
+        self.gpt_model.addItems(self.gpt_get_models(self.gpt_key.text().strip()))
 
     def deserialize_theme(self,name:str) -> dict:
         if not name in THEMES: return
@@ -980,18 +985,22 @@ class MainWindow(QWidget):
             QMessageBox.information(self,"PyaiiTTS","TTS Success!")
     
     def generate_gpt(self):
-        key,prompt = self.gpt_key.text().strip(),self.gpt_prompt.toPlainText().strip()
-        LOG("Start GPT Gen…")
-        with OpenAI(api_key=key) as client:
-            chat_completion = client.chat.completions.create(
-                messages=[{
-                    "role":"user",
-                    "content":prompt
-                }],
-                model=self.gpt_model.currentText().strip()
-            )
-        self.gpt_output.setText(chat_completion.choices[0].message.content)
-        LOG("Finish GPT Gen.")
+        try:
+            key,prompt = self.gpt_key.text().strip(),self.gpt_prompt.toPlainText().strip()
+            LOG("Start GPT Gen…")
+            with OpenAI(api_key=key) as client:
+                chat_completion = client.chat.completions.create(
+                    messages=[{
+                        "role":"user",
+                        "content":prompt
+                    }],
+                    model=self.gpt_model.currentText().strip()
+                )
+            self.gpt_output.setText(chat_completion.choices[0].message.content)
+            LOG("Finish GPT Gen.")
+        except Exception as e:
+            LOG("GPT Generation Failed: "+str(e))
+            QErrorMessage(self).showMessage("OpenAI: "+str(e))
 
     def copy_output(self):
         pyclip.copy(self.gpt_output.toPlainText().strip())
