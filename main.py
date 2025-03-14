@@ -788,7 +788,11 @@ class MainWindow(QWidget):
                 _themes[k][y] = RGB(x)
 
     def remove_theme(self):
-        name, s = QInputDialog.getText(self,"PyaiiTTS | Remove Theme","Remove theme of name:")
+        keys = list(THEMES.keys())
+        for k in PROTECTED_THEMES:
+            keys.remove(k)
+        name, s = QInputDialog.getItem(self,"PyaiiTTS | Remove Theme","Choose a theme to remove:",keys,0,False)
+        # name, s = QInputDialog.getText(self,"PyaiiTTS | Remove Theme","Remove theme of name:")
         if not s or name in PROTECTED_THEMES: return
         if name in list(THEMES.keys()):
             x = QMessageBox.warning(self,"PyaiiTTS | Remove Theme",f"Remove theme '{name}'?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
@@ -833,7 +837,8 @@ class MainWindow(QWidget):
     
     def export_theme(self):
         try:
-            name, s = QInputDialog.getText(self,"PyaiiTTS | Export Theme","Theme to export:")
+            name, s = QInputDialog.getItem(self,"PyaiiTTS | Export Theme","Choose a theme to export:",THEMES.keys(),0,False)
+            # name, s = QInputDialog.getText(self,"PyaiiTTS | Export Theme","Theme to export:")
             if not s: return
             if not name in THEMES.keys():
                 QMessageBox.critical(self,"PyaiiTTS | Export Theme",f"Failed to export theme: theme {name} does not exist!",QMessageBox.StandardButton.Close)
