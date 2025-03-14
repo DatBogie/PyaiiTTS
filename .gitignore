@@ -11,3 +11,4 @@ main
 installer
 .DS_STORE
 *.pyaiitheme
+!Custom Themes/*
