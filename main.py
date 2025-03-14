@@ -21,6 +21,8 @@ else:
     PDIR = os.path.dirname(os.path.abspath(__file__))+"/"
 
 USER = os.path.expanduser("~")
+if sys.platform == "win32":
+    USER = USER.replace("\\","/")
     
 def LOG(e:Exception|str):
     if not os.path.exists(PDIR+"log.txt"):
