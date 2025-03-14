@@ -1,7 +1,7 @@
 import sys, json, os, requests, pyclip
-from PyQt6.QtGui import QColor, QTextOption, QIcon, QPixmap
-from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QCheckBox, QStyleFactory, QErrorMessage
-from PyQt6.QtCore import Qt, pyqtSignal, QEvent
+from PyQt6.QtGui import QColor, QIcon, QPixmap
+from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QFileDialog, QVBoxLayout, QHBoxLayout, QLabel, QMessageBox, QLineEdit, QComboBox, QTextEdit, QFrame, QColorDialog, QInputDialog, QDoubleSpinBox, QSlider, QStyleFactory, QErrorMessage
+from PyQt6.QtCore import Qt, pyqtSignal
 from functools import partial
 from elevenlabs.client import ElevenLabs
 from random import randrange
@@ -12,13 +12,15 @@ __start__ = False
 
 DEFAULT_STYLE = "Fusion"
 
-root = "/"
+ROOT = "/"
 if sys.platform == "win32":
-    root = "C:/"
+    ROOT = "C:/"
 if getattr(sys,"frozen",False):
     PDIR = os.path.dirname(sys.executable)+"/"
 else:
     PDIR = os.path.dirname(os.path.abspath(__file__))+"/"
+
+USER = os.path.expanduser("~")
     
 def LOG(e:Exception|str):
     if not os.path.exists(PDIR+"log.txt"):
@@ -167,7 +169,7 @@ DEFAULT_PREF = {
 
 if not os.path.exists(PDIR+"voices.json"):
     with open(PDIR+"voices.json","w") as f:
-        json.dump(DEFAULT_VOICES,f)
+        json.dump(DEFAULT_VOICES,f,indent=4)
         # f.write('{"John": "fTt87DbpNDYfGLhYRaCj", "Adam": "pNInz6obpgDQGcFmaJgB", "Wheatly": "wbkTEiY2duHYPGxRIrMb", "Heavy": "NXdARWuv0JFJUqSTb4RI"}')
 with open(PDIR+"voices.json","r") as f:
     try:
@@ -179,7 +181,7 @@ with open(PDIR+"voices.json","r") as f:
             os.rename(PDIR+"voices.json","voices (backup).json")
         except Exception as e:LOG(e)
         with open(PDIR+"voices.json","w") as f:
-            json.dump(DEFAULT_VOICES,f)
+            json.dump(DEFAULT_VOICES,f,indent=4)
 
 
 # VOICES = {
@@ -199,7 +201,7 @@ COLORS = {
 
 if not os.path.exists(PDIR+"themes.json"):
     with open(PDIR+"themes.json","w") as f:
-        json.dump(DEFAULT_THEMES,f)
+        json.dump(DEFAULT_THEMES,f,indent=4)
 
 with open(PDIR+"themes.json","r") as f:
     try:
@@ -296,6 +298,20 @@ class QTextEditWrap(QTextEdit):
     #             return True
     #     return super().eventFilter(source, event)
 
+class HLine(QFrame):
+    def __init__(self,space:int|None=None):
+        super().__init__()
+        self.setFrameShape(QFrame.Shape.HLine)
+        # self.setFrameShadow(QFrame.Shadow.Sunken)
+        if space: self.setFixedHeight(space)
+
+class VLine(QFrame):
+    def __init__(self,space:int|None=None):
+        super().__init__()
+        self.setFrameShape(QFrame.Shape.VLine)
+        # self.setFrameShadow(QFrame.Shadow.Sunken)
+        if space: self.setFixedHeight(space)
+
 class MainWindow(QWidget):
     def __init__(self):
         global __start__
@@ -334,7 +350,7 @@ class MainWindow(QWidget):
                     sys.exit()
             if not os.path.exists(PDIR+"conf.json"):
                 with open(PDIR+"conf.json","w") as f:
-                    json.dump(DEFAULT_CONF,f)
+                    json.dump(DEFAULT_CONF,f,indent=4)
 
             with open(PDIR+"conf.json","r") as f:
                 try:
@@ -346,7 +362,7 @@ class MainWindow(QWidget):
 
             if not os.path.exists(PDIR+"pref.json"):
                 with open(PDIR+"pref.json","w") as f:
-                    json.dump(DEFAULT_PREF,f)
+                    json.dump(DEFAULT_PREF,f,indent=4)
             with open(PDIR+"pref.json","r") as f:
                 try:
                     prefer = json.load(f)
@@ -375,8 +391,8 @@ class MainWindow(QWidget):
         self.setWindowTitle("PyaiiTTS")
         self.setMinimumSize(800,600)
 
-        l = QLabel("PyaiiTTS")
-        l.setStyleSheet("font-size: 12pt;")
+        l = QLabel("<b>PyaiiTTS</b>")
+        l.setStyleSheet("font-size: 14pt;")
         l.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         input_label = QLabel("Text:")
@@ -384,7 +400,7 @@ class MainWindow(QWidget):
         self.text_input = QTextEditWrap()
         self.text_input.setPlainText(self.data["text"].encode('utf-8').decode('unicode_escape'))
         self.text_input.setPlaceholderText("Enter the text to be spoken here…")
-        self.text_input.setToolTip("Put the text you want the AI voice to say here.\nLine breaks are not allowed.")
+        self.text_input.setToolTip("Put the text you want the AI voice to say here.")
         
         open_gpt = QPushButton(QIcon(PDIR+"assets/chat-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Generate Text…")
         self.IconButtons.append({"icon_path":"assets/chat-","button":open_gpt})
@@ -469,22 +485,39 @@ class MainWindow(QWidget):
         self.pref.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),self.y()+int((self.height()-(self.height()/1.1))/2),0,0)
         self.pref.setFixedSize(int(self.width()/1.1),int(self.height()/1.1))
 
-        pref_l = QLabel("Preferences")
-        pref_l.setStyleSheet("font-size: 12pt;")
+        pref_l = QLabel("<b>Preferences</b>")
+        pref_l.setStyleSheet("font-size: 14pt;")
         pref_l.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.pref_tl = QLabel("Themes:")
-        self.pref_tl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pref_tl = QLabel("Themes")
+        pref_tl.setStyleSheet("font-size: 11pt;")
+        pref_tl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        pref_t_layout = QHBoxLayout()
+
+        pref_t_label = QLabel("Theme:  ")
+        pref_t_layout.addWidget(pref_t_label)
 
         self.pref_t = ComboBox(self)
-        # self.pref_t.setEditable(True)
-        # self.pref_t.lineEdit().setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # self.pref_t.lineEdit().setReadOnly(True)
+        pref_t_layout.addWidget(self.pref_t,4)
 
         self.pref_t.activated.connect(partial(self.apply_current_theme,self.pref_t))
+        
+        pref_widget_style_layout = QHBoxLayout()
+        
+        pref_widget_style_label = QLabel("Widgets:")
+        pref_widget_style_layout.addWidget(pref_widget_style_label)
+        
+        self.pref_widget_style = ComboBox(self)
+        styles = ["Default","System"]+QStyleFactory.keys()
+        self.pref_widget_style.addItems(styles)
+        self.pref_widget_style.setCurrentIndex(styles.index(self.prefer["WidgetStyle"]))
+        self.pref_widget_style.currentIndexChanged.connect(self.update_widget_style)
+        pref_widget_style_layout.addWidget(self.pref_widget_style,4)
 
-        self.pref_cl = QLabel("Colors:")
-        self.pref_cl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        pref_cl = QLabel("Colors")
+        pref_cl.setStyleSheet("font-size: 11pt;")
+        pref_cl.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self.pref_c = {}
 
@@ -493,18 +526,26 @@ class MainWindow(QWidget):
 
         self.pref_layout = QVBoxLayout()
         self.pref_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        
+        pref_t_save = QPushButton(QIcon(PDIR+"assets/save-as-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save theme as…")
+        pref_t_save.clicked.connect(self.save_theme)
+        self.IconButtons.append({"icon_path":"assets/save-as-","button":pref_t_save})
 
-        self.addWidgets(pref_layout,[pref_l,self.pref_tl,self.pref_t,self.pref_cl])
+        pref_t_remove = QPushButton(QIcon(PDIR+"assets/delete-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Remove Theme…")
+        pref_t_remove.clicked.connect(self.remove_theme)
+        self.IconButtons.append({"icon_path":"assets/delete-","button":pref_t_remove})
+        
+        pref_t_import = QPushButton(QIcon(PDIR+"assets/import-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Import theme…")
+        pref_t_import.clicked.connect(self.import_theme)
+        self.IconButtons.append({"icon_path":"assets/import-","button":pref_t_import})
+        
+        pref_t_export = QPushButton(QIcon(PDIR+"assets/export-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Export theme…")
+        pref_t_export.clicked.connect(self.export_theme)
+        self.IconButtons.append({"icon_path":"assets/export-","button":pref_t_export})
+
+        self.addWidgets(pref_layout,[pref_l,pref_tl,pref_t_layout,pref_widget_style_layout,pref_t_save,pref_t_export,pref_t_import,pref_t_remove,HLine(40),pref_cl])
 
         pref_layout.addLayout(self.pref_layout)
-
-        self.pref_t_save = QPushButton(QIcon(PDIR+"assets/save-as-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Save theme as…")
-        self.pref_t_save.clicked.connect(self.save_theme)
-        self.IconButtons.append({"icon_path":"assets/save-as-","button":self.pref_t_save})
-
-        self.pref_t_remove = QPushButton(QIcon(PDIR+"assets/delete-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Remove Theme…")
-        self.pref_t_remove.clicked.connect(self.remove_theme)
-        self.IconButtons.append({"icon_path":"assets/delete-","button":self.pref_t_remove})
         
         # self.pref_native = QCheckBox("Use Native Widget Style*")
         # self.pref_native.setToolTip("Skip forcing the app to use the Fusion style.\n*(Requires Restart)")
@@ -515,12 +556,6 @@ class MainWindow(QWidget):
         # self.pref_native.checkStateChanged.connect(self.toggle_native)
         # if DEFAULT_STYLE == "fusion": self.pref_native.setDisabled(True)
         
-        self.pref_widget_style = ComboBox(self)
-        styles = ["Default","System"]+QStyleFactory.keys()
-        self.pref_widget_style.addItems(styles)
-        self.pref_widget_style.setCurrentIndex(styles.index(self.prefer["WidgetStyle"]))
-        self.pref_widget_style.currentIndexChanged.connect(self.update_widget_style)
-        
         pref_open_p_dir = QPushButton(QIcon(PDIR+"assets/open-folder-"+("light" if COLORS["Button"].lightness() >= 128 else "dark")),"Open Program Directory")
         pref_open_p_dir.clicked.connect(self.open_prg_dir)
         self.IconButtons.append({"icon_path":"assets/open-folder-","button":pref_open_p_dir})
@@ -529,7 +564,11 @@ class MainWindow(QWidget):
         self.pref_reset.clicked.connect(self.reset)
         self.IconButtons.append({"icon_path":"assets/warning-","button":self.pref_reset})
 
-        self.addWidgets(pref_layout,[self.pref_t_save,self.pref_t_remove,self.pref_widget_style,pref_open_p_dir,self.pref_reset])
+        pref_other = QLabel("Other")
+        pref_other.setStyleSheet("font-size: 11pt;")
+        pref_other.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.addWidgets(pref_layout,[HLine(40),pref_other,pref_open_p_dir,self.pref_reset])
 
         self.pref.setLayout(pref_layout)
 
@@ -715,6 +754,18 @@ class MainWindow(QWidget):
             self.gpt_model.clear()
             self.gpt_model.addItems(self.gpt_get_models(self.gpt_key.text().strip()))
 
+    def deserialize_theme(self,name:str) -> dict:
+        if not name in THEMES: return
+        theme:dict = THEMES[name].copy()
+        for i, v in theme.items():
+            theme[i] = v.get()
+        return theme
+    
+    def serialize_theme(self,data:dict[str,RGB]) -> dict:
+        for i, v in data.items():
+            data[i] = RGB(v)
+        return data
+    
     def dump_THEMES(self):
         _themes = THEMES.copy()
         for k,v in _themes.items():
@@ -722,7 +773,7 @@ class MainWindow(QWidget):
                 _themes[k][y] = x.get()
         try:
             with open(PDIR+"themes.json","w") as f:
-                json.dump(_themes,f)
+                json.dump(_themes,f,indent=4)
         except Exception as e:
             return e
         for k,v in _themes.items():
@@ -749,23 +800,59 @@ class MainWindow(QWidget):
         else:
             QMessageBox.critical(self,"PyaiiTTS | Remove Theme",f"Invalid theme '{name}'!")
 
-    def save_theme(self):
-        name, s = QInputDialog.getText(self,"PyaiiTTS | Save Theme","Save Theme as:")
-        if not s or name in PROTECTED_THEMES:
+    def save_theme(self,_name:str=None,_data:dict[str,RGB]=None,_silence_popups:bool=False) -> bool:
+        name = _name
+        if not _name:
+            name, s = QInputDialog.getText(self,"PyaiiTTS | Save Theme","Save Theme as:")
+            if not s: return False
+        if name in PROTECTED_THEMES:
             QMessageBox.critical(self,"PyaiiTTS | Save Theme",f"Failed to save theme: invalid name '{name}'.",QMessageBox.StandardButton.Close)
-            return
+            return False
+        overwrite = False
         if name in list(THEMES.keys()):
             x = QMessageBox.warning(self,"PyaiiTTS | Save Theme",f"Overwrite existing theme '{name}'?",QMessageBox.StandardButton.Yes,QMessageBox.StandardButton.No)
-            if x != QMessageBox.StandardButton.Yes: return
-        THEMES[name] = COLORS
+            if x != QMessageBox.StandardButton.Yes: return False
+            overwrite = True
+        THEMES[name] = COLORS if not _data else _data
         self.apply_theme(name)
         e = self.dump_THEMES()
-        if e: QErrorMessage(self).showMessage(str(e)); return
-        self.pref_t.addItem(name)
+        if e: QErrorMessage(self).showMessage(str(e)); return False
+        if not overwrite: self.pref_t.addItem(name)
         self.pref_t.setCurrentIndex(
             list(THEMES.keys()).index(self.prefer["Theme"])
         )
-        QMessageBox.information(self,"PyaiiTTS | Save Theme",f"Theme '{name}' saved and applied successfully!")
+        if not _silence_popups: QMessageBox.information(self,"PyaiiTTS | Save Theme",f"Theme '{name}' saved and applied successfully!")
+        return True
+    
+    def export_theme(self):
+        try:
+            name, s = QInputDialog.getText(self,"PyaiiTTS | Export Theme","Theme to export:")
+            if not s: return
+            if not name in THEMES.keys():
+                QMessageBox.critical(self,"PyaiiTTS | Export Theme",f"Failed to export theme: theme {name} does not exist!",QMessageBox.StandardButton.Close)
+                return
+            e_path = (USER+"Downloads" if os.path.exists(USER+"Downloads") else PDIR)+name+".pyaiitheme"
+            fp,_ = QFileDialog.getSaveFileName(self,"Export theme as…",e_path,"PyaiiTTS Themes (*.pyaiitheme);;All Files (*)","*.pyaiitheme")
+            if not fp: return
+            f = open(fp,"w")
+            json.dump(self.deserialize_theme(name),f,indent=4)
+            QMessageBox.information(self,"PyaiiTTS | Export Theme",f"Theme '{name}' exported to {fp} successfully!")
+        except Exception as e:
+            QErrorMessage(self).showMessage(str(e))
+    
+    def import_theme(self):
+        try:
+            fp,_ = QFileDialog.getOpenFileName(self,"Choose a theme to import…",PDIR,"PyaiiTTS Themes (*.pyaiitheme)","*.pyaiitheme")
+            if not os.path.exists(fp): return
+            f = open(fp, "r")
+            name = f.name[f.name.rfind("/")+1:f.name.rfind('.pyaiitheme')]
+            data = self.serialize_theme(json.load(f))
+            r = self.save_theme(name,data,True)
+            if not r: return
+            QMessageBox.information(self,"PyaiiTTS | Import Theme",f"Theme '{name}' imported successfully!")
+        except Exception as e:
+            QErrorMessage(self).showMessage(str(e))
+        
 
     def apply_current_theme(self,x:QComboBox):
         self.apply_theme(x.currentText())
@@ -794,9 +881,12 @@ class MainWindow(QWidget):
         self.set_style()
         THEME_CHANGED = True
 
-    def addWidgets(self,x:QHBoxLayout|QVBoxLayout,y:list[QWidget]):
+    def addWidgets(self,x:QHBoxLayout|QVBoxLayout,y:list[QWidget|QVBoxLayout|QHBoxLayout]):
         for v in y:
-            x.addWidget(v)
+            if type(v) != QVBoxLayout and type(v) != QHBoxLayout:
+                x.addWidget(v)
+            else:
+                x.addLayout(v)
 
     def show_pref(self):
         self.pref.setGeometry(self.x()+int((self.width()-(self.width()/1.1))/2),(self.y()+int((self.height()-(self.height()/1.1))/2)),0,0)
@@ -912,7 +1002,7 @@ class MainWindow(QWidget):
             # self.setWindowTitle("PyaiiTTS")
             # prefer = {"Theme": self.prefer["Theme"]}
             with open(PDIR+"pref.json","w") as f:
-                json.dump(self.prefer,f)
+                json.dump(self.prefer,f,indent=4)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Preferences",QMessageBox.StandardButton.Ok)
         except Exception as e:
             QErrorMessage(self).showMessage(str(e))
@@ -926,7 +1016,7 @@ class MainWindow(QWidget):
             # self.setWindowTitle("PyaiiTTS")
             # data = {"output_path": self.data["output_path"], "voice_id": self.data["voice_id"], "text": self.data["text"], "output_name": self.data["output_name"]}
             with open(PDIR+"conf.json","w") as f:
-                json.dump(self.data,f)
+                json.dump(self.data,f,indent=4)
             QMessageBox.information(self,"PyaiiTTS","Successfully Saved Configurations",QMessageBox.StandardButton.Ok)
         except Exception as e:
             QErrorMessage(self).showMessage(str(e))
